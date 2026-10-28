@@ -1,0 +1,1197 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e141a">
+<meta name="description" content="Status 1 Debrief – anonymes 2-Minuten-Debrief für Rettungsdienst-Besatzungen.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Status 1">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+/* Layout: single-column phone tool read aloud in the vehicle; sticky bar with timer, FMS-key motif, big tap targets */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --surface-2:#e2e7ec; --fg:#14202b; --muted:#56636f; --line:#cbd3db;
+  --accent:#d4441b; --accent-fg:#ffffff;
+  --pos:#1d8552; --pos-bg:#dcf1e5; --neg:#a96200; --neg-bg:#fbe8c6;
+  --key:#1b2631; --key-fg:#f3f6f9; --key-edge:#0b1117;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e141a; --surface:#16202a; --surface-2:#1f2a36; --fg:#e6ecf1; --muted:#93a2b0; --line:#2b3846;
+    --accent:#ff6c3e; --accent-fg:#1b0c06;
+    --pos:#4fca8c; --pos-bg:#14342a; --neg:#f1ad4b; --neg-bg:#3a2a12;
+    --key:#e6ecf1; --key-fg:#0e141a; --key-edge:#9aa8b5;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e141a; --surface:#16202a; --surface-2:#1f2a36; --fg:#e6ecf1; --muted:#93a2b0; --line:#2b3846;
+  --accent:#ff6c3e; --accent-fg:#1b0c06;
+  --pos:#4fca8c; --pos-bg:#14342a; --neg:#f1ad4b; --neg-bg:#3a2a12;
+  --key:#e6ecf1; --key-fg:#0e141a; --key-edge:#9aa8b5;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* app bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0}
+.brand b{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em}
+.key{display:inline-grid;place-items:center;background:var(--key);color:var(--key-fg);font-family:var(--display);font-weight:700;border-radius:8px;box-shadow:inset 0 -3px 0 var(--key-edge)}
+.key.s{width:32px;height:32px;font-size:22px}
+.timer{font-family:var(--display);font-weight:600;font-size:26px;font-variant-numeric:tabular-nums;letter-spacing:.02em;min-width:5ch;text-align:right}
+.timer.over{color:var(--neg)}
+.progress{height:4px;background:var(--surface-2);border-radius:2px;overflow:hidden;margin:-12px 0 20px}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .25s linear}
+
+/* type */
+h1,h2{font-family:var(--display);font-weight:700;line-height:1.05;text-wrap:balance;margin:0}
+h1{font-size:44px;letter-spacing:.01em}
+h2{font-size:34px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lead{font-size:19px;color:var(--muted);margin:0}
+.hint{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:16px;color:var(--muted)}
+.hint strong{color:var(--fg)}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.small{font-size:14px;color:var(--muted)}
+
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;padding:12px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:18px;width:100%;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-family:var(--display);font-size:24px;letter-spacing:.02em}
+.btn.ghost{background:transparent}
+.btn.warn{border-color:var(--neg);color:var(--neg)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn small{font-family:var(--body);font-weight:500;font-size:15px;opacity:.85}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.linkrow{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:2px;min-height:76px}
+.tile b{font-size:17px}
+.tile span{font-size:14px;color:var(--muted)}
+
+/* hero */
+.hero{display:flex;gap:18px;align-items:center;margin-block:8px 6px}
+.key.xl{width:96px;height:96px;font-size:74px;border-radius:18px;box-shadow:inset 0 -7px 0 var(--key-edge);flex:none}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+.fact{font-size:14px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--muted)}
+
+/* question */
+.q{font-family:var(--display);font-weight:700;font-size:38px;line-height:1.05;text-wrap:balance}
+.readaloud{display:flex;gap:8px;align-items:center}
+.tag-read{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;background:var(--surface-2);border-radius:6px;padding:3px 8px;color:var(--muted)}
+
+/* chips */
+.group{display:flex;flex-direction:column;gap:8px}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.chip{min-height:52px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);padding:8px 12px;text-align:left;font-weight:500;font-size:16px;line-height:1.2;display:flex;align-items:center;gap:8px}
+.chip::before{content:"";width:16px;height:16px;flex:none;border-radius:4px;border:1.5px solid var(--line)}
+.mode-pos .chip[aria-pressed="true"]{background:var(--pos-bg);border-color:var(--pos)}
+.mode-pos .chip[aria-pressed="true"]::before{background:var(--pos);border-color:var(--pos)}
+.mode-neg .chip[aria-pressed="true"]{background:var(--neg-bg);border-color:var(--neg)}
+.mode-neg .chip[aria-pressed="true"]::before{background:var(--neg);border-color:var(--neg)}
+.chip.cat[aria-pressed="true"]{border-color:var(--fg);background:var(--surface-2)}
+.chip.cat[aria-pressed="true"]::before{background:var(--fg);border-color:var(--fg)}
+.detail{grid-column:1/-1;background:var(--surface-2);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.dlabel{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.minis{display:flex;flex-wrap:wrap;gap:6px}
+.msel{min-height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);padding:6px 10px;font-size:15px;max-width:100%}
+.mode-pos .msel.on{border-color:var(--pos);background:var(--pos-bg);font-weight:600}
+.mode-neg .msel.on{border-color:var(--neg);background:var(--neg-bg);font-weight:600}
+.mini{min-height:40px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);padding:6px 12px;font-size:15px}
+.mode-pos .mini[aria-pressed="true"]{background:var(--pos-bg);border-color:var(--pos);font-weight:600}
+.mode-neg .mini[aria-pressed="true"]{background:var(--neg-bg);border-color:var(--neg);font-weight:600}
+.dlines{display:grid;gap:2px;font-size:14px;color:var(--muted)}
+.dlines b{font-weight:600}.dlines b.p{color:var(--pos)}.dlines b.n{color:var(--neg)}
+.wm{display:inline-flex;align-items:baseline;gap:.3em}
+.wm small{font-family:var(--body);font-weight:600;font-size:max(11px,.36em);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;border-radius:999px;padding:3px 10px}
+.badge.pos{background:var(--pos-bg);color:var(--pos)}
+.badge.neg{background:var(--neg-bg);color:var(--neg)}
+
+textarea{width:100%;min-height:96px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);padding:12px;font-size:17px;resize:vertical}
+input[type=password],input[type=text]{width:100%;min-height:52px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);padding:10px 12px;font-size:22px;letter-spacing:.3em;font-variant-numeric:tabular-nums}
+select.shiftsel{width:100%;min-height:52px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);padding:10px 12px;font:inherit;font-size:17px}
+input#station,input#su_station,input#wipe,input.shiftin,input.srvin{width:100%;min-height:52px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);padding:10px 12px;font-size:18px}
+input[type=password]::placeholder{letter-spacing:normal;font-size:17px}
+label.check{display:flex;gap:10px;align-items:center;font-size:16px}
+label.check input{width:22px;height:22px;accent-color:var(--accent)}
+
+/* rules card */
+.rules{display:grid;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h3{font-family:var(--display);font-size:24px;margin:0 0 8px}
+.card ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.www{display:grid;gap:8px;margin:10px 0}
+.www div{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:start}
+.www b{font-family:var(--display);font-size:26px;line-height:1;color:var(--accent)}
+.www em{font-style:normal;color:var(--muted);display:block;font-size:15px}
+
+/* stats */
+.stat-head{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.num{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.num b{display:block;font-family:var(--display);font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+.num span{font-size:13px;color:var(--muted)}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;min-height:44px;border:0;background:var(--surface);font-size:15px;font-weight:600;padding:6px}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.bars{display:grid;gap:12px}
+.barrow{display:grid;gap:4px}
+.barrow .lbl{display:flex;justify-content:space-between;gap:8px;font-size:15px}
+.barrow .lbl span{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.barrow .lbl span .p{color:var(--pos);font-weight:600}
+.barrow .lbl span .n{color:var(--neg);font-weight:600}
+.track{height:12px;background:var(--surface-2);border-radius:6px;display:flex;overflow:hidden}
+.track .p{background:var(--pos)}
+.track .n{background:var(--neg)}
+.zero{opacity:.5}
+.legend{display:flex;gap:14px;font-size:14px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.lessons{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.lessons li{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.lessons li p{margin:0;min-width:0;overflow-wrap:anywhere}
+.x{border:0;background:none;color:var(--muted);font-size:14px;text-decoration:underline;flex:none}
+.s0{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-radius:12px;padding:12px 14px}
+.s0 b{font-size:17px}
+.s0 small{color:var(--muted);font-size:14px}
+.key.s0k{width:40px;height:40px;font-size:28px;background:var(--accent);color:var(--accent-fg);box-shadow:none;flex:none}
+.demo{background:var(--neg-bg);color:var(--neg);border-radius:8px;padding:8px 12px;font-size:14px;font-weight:600}
+.err{color:var(--accent);font-size:15px;font-weight:600}
+
+/* done */
+.done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding-top:24px}
+.key.glow{width:140px;height:140px;font-size:108px;border-radius:24px;box-shadow:inset 0 -9px 0 var(--key-edge),0 0 0 8px color-mix(in srgb,var(--pos) 25%,transparent)}
+@media (prefers-reduced-motion:no-preference){
+  .key.glow{animation:pop .5s ease-out}
+  @keyframes pop{from{transform:scale(.85);opacity:.4}to{transform:scale(1);opacity:1}}
+}
+@media (max-width:380px){h1{font-size:38px}.q{font-size:32px}.key.xl{width:80px;height:80px;font-size:60px}}
+
+/* Bericht (A4) – feste helle Druckfarben, unabhängig vom App-Theme */
+.linkbtn{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+details>summary{cursor:pointer;padding:4px 0}
+.closebox{border-top:1px solid var(--line);padding-top:12px}
+.qrbox{background:#fff;border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;color:#14202b}
+.qrbox svg{width:min(78vw,340px);height:auto;display:block}
+.qrbox .small{color:#56636f}
+.scanbox{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1/1;max-width:420px;width:100%;align-self:center}
+.scanbox video{width:100%;height:100%;object-fit:cover;display:block}
+.scanbox i{position:absolute;inset:14%;border:3px solid var(--accent);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+.collected li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.collected{list-style:none;margin:0;padding:0}
+.okmsg{background:var(--pos-bg);color:var(--pos);border-radius:8px;padding:8px 12px;font-size:15px;font-weight:600}
+.errmsg{background:var(--neg-bg);color:var(--neg);border-radius:8px;padding:8px 12px;font-size:15px;font-weight:600}
+.rp-wrap{position:relative;overflow:hidden;width:100%}
+.rp-doc{width:210mm;transform-origin:top left;display:flex;flex-direction:column;gap:6mm}
+.rp-page{--i:#14202b;--mu:#56636f;--li:#d8dee4;--po:#1d8552;--pob:#e2f2e9;--ne:#a96200;--neb:#fbeed8;--ac:#d4441b;
+  width:210mm;min-height:296mm;box-sizing:border-box;padding:12mm 16mm 10mm;background:#fff;color:var(--i);
+  font-family:var(--body);font-size:10pt;line-height:1.4;display:flex;flex-direction:column;gap:6mm;
+  box-shadow:0 2px 14px rgba(0,0,0,.18);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rp-page *{box-sizing:border-box}
+.rp-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:3mm;border-bottom:.5mm solid var(--i)}
+.rp-brand{display:flex;align-items:center;gap:2.4mm;font-family:var(--display);font-weight:700;font-size:15pt;line-height:1}
+.rp-brand small{font-family:var(--body);font-weight:600;font-size:6.5pt;letter-spacing:.16em;color:var(--ac)}
+.rp-key{width:7.5mm;height:7.5mm;border-radius:1.5mm;background:#1b2631;color:#f3f6f9;display:flex;align-items:center;justify-content:center;font-size:13pt;box-shadow:inset 0 -.6mm 0 #0b1117;position:relative}
+.rp-key:after{content:"";position:absolute;left:30%;width:40%;bottom:1.1mm;height:.45mm;background:var(--ac)}
+.rp-meta{font-size:8.5pt;color:var(--mu);text-align:right}
+.rp-eyebrow{font-size:7.5pt;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ac)}
+.rp-title h2{margin:1mm 0 0;font-family:var(--display);font-weight:700;font-size:20pt;line-height:1.05}
+.rp-cover h1{margin:1.5mm 0 0;font-family:var(--display);font-weight:700;font-size:30pt;line-height:.95}
+.rp-cover .rp-sub{margin-top:2.5mm;font-size:12pt}
+.rp-cover .rp-basis{margin-top:1mm;font-size:9.5pt;color:var(--mu)}
+.rp-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm}
+.rp-kpi{border:.3mm solid var(--li);border-radius:2mm;padding:2.5mm 3.5mm;display:flex;flex-direction:column;gap:.5mm}
+.rp-kpi b{font-family:var(--display);font-size:24pt;line-height:1}
+.rp-kpi span{font-size:8.5pt;color:var(--mu)}
+.rp-two{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.rp-top{border-radius:2.5mm;padding:4mm 4.5mm;display:flex;flex-direction:column;gap:2.6mm}
+.rp-top.p{background:var(--pob)} .rp-top.n{background:var(--neb)}
+.rp-top h3{margin:0;font-size:8pt;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.rp-top.p h3{color:var(--po)} .rp-top.n h3{color:var(--ne)}
+.rp-top ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:2mm}
+.rp-top li{display:grid;grid-template-columns:6mm 1fr auto;gap:2mm;align-items:baseline}
+.rp-top li .no{font-family:var(--display);font-weight:700;font-size:13pt}
+.rp-top li .nm{font-weight:600;font-size:11pt;line-height:1.2}
+.rp-top li .nm small{display:block;font-weight:400;font-size:8.5pt;color:var(--mu)}
+.rp-top li .ct{font-family:var(--display);font-weight:700;font-size:15pt}
+.rp-top.p .ct,.rp-top.p .no{color:var(--po)} .rp-top.n .ct,.rp-top.n .no{color:var(--ne)}
+.rp-top .none{font-size:9pt;color:var(--mu)}
+.rp-box{border:.3mm solid var(--li);border-radius:2.5mm;padding:4mm 4.5mm;display:flex;flex-direction:column;gap:2mm}
+.rp-box h3{margin:0;font-size:8pt;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.rp-chg2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+.rp-chg2 .col{display:flex;flex-direction:column;gap:2mm;padding-left:3mm;border-left:1mm solid}
+.rp-chg2 .col.g{border-color:var(--po)} .rp-chg2 .col.b{border-color:var(--ne)}
+.rp-chg2 h4{margin:0;font-size:8pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.rp-chg2 .g h4{color:var(--po)} .rp-chg2 .b h4{color:var(--ne)}
+.rp-ch{display:flex;flex-direction:column;gap:.8mm;padding:1mm 0;border-top:.2mm solid var(--li)}
+.rp-ch:first-of-type{border-top:0}
+.rp-ch .t{font-size:9.5pt;line-height:1.3}
+.rp-ch .cmp{display:grid;grid-template-columns:auto 1fr 8mm auto 1fr 8mm;column-gap:1.5mm;align-items:center;font-size:7.5pt;color:var(--mu)}
+.rp-ch .rbar{display:block;height:2.4mm;background:#eef1f4;border-radius:.6mm;overflow:hidden}
+.rp-ch .rbar i{display:block;height:100%}
+.rp-ch .rbar i.was{background:#b9c2cb} .rp-ch .rbar i.ng{background:var(--ne)} .rp-ch .rbar i.ps{background:var(--po)}
+.rp-ch .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--i)}
+.rp-chg{display:grid;grid-template-columns:5mm 1fr auto;gap:2mm;align-items:baseline;padding:1.2mm 0;border-top:.2mm solid var(--li)}
+.rp-chg:first-of-type{border-top:0}
+.rp-chg .ar{font-weight:700;font-size:11pt}
+.rp-chg .ar.g{color:var(--po)} .rp-chg .ar.b{color:var(--ne)}
+.rp-chg .v{font-variant-numeric:tabular-nums;color:var(--mu);font-size:9pt}
+.rp-note{font-size:8.5pt;color:var(--mu)}
+.rp-chart{display:flex;flex-direction:column}
+.rp-ch-head{display:grid;grid-template-columns:52mm 1fr 1fr;font-size:8pt;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding-bottom:1.5mm}
+.rp-ch-head .l{text-align:right;padding-right:3mm;color:var(--po)} .rp-ch-head .r{padding-left:3mm;color:var(--ne)}
+.rp-grp{font-size:7.5pt;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);padding:3mm 0 1mm;border-bottom:.2mm solid var(--li)}
+.rp-row{display:grid;grid-template-columns:52mm 1fr 1fr;align-items:center;min-height:6.6mm}
+.rp-row .lab{font-size:9.5pt;padding-right:2mm}
+.rp-row .lft,.rp-row .rgt{display:flex;align-items:center;gap:1.6mm;height:100%;font-variant-numeric:tabular-nums;font-size:8.5pt}
+.rp-row .lft{justify-content:flex-end;padding-right:2mm;border-right:.3mm solid var(--i)}
+.rp-row .rgt{padding-left:2mm}
+.rp-row i{display:block;height:3.6mm;border-radius:.6mm}
+.rp-row .lft i{background:var(--po)} .rp-row .rgt i{background:var(--ne)}
+.rp-row em{font-style:normal;min-width:5mm}
+.rp-row .lft em{text-align:right}
+.rp-row.zero .lab{color:var(--mu)}
+.rp-dets{display:flex;flex-direction:column;gap:3mm}
+.rp-det{border:.3mm solid var(--li);border-radius:2.5mm;padding:3mm 4.5mm;break-inside:avoid}
+.rp-det h3{margin:0 0 2mm;font-family:var(--display);font-size:14pt;line-height:1.1}
+.rp-det-grid{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.rp-det h4{margin:0 0 1mm;font-size:7.5pt;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.rp-det table{width:100%;border-collapse:collapse;font-size:8.8pt}
+.rp-det th{font-weight:600;font-size:7.5pt;text-align:right;padding:.6mm 0 .6mm 2mm;color:var(--mu)}
+.rp-det th:first-child{text-align:left;padding-left:0}
+.rp-det td{padding:.9mm 0;border-top:.2mm solid var(--li);vertical-align:top}
+.rp-det td.c{text-align:right;width:13mm;font-variant-numeric:tabular-nums;font-weight:600}
+.rp-det td.c.p{color:var(--po)} .rp-det td.c.n{color:var(--ne)}
+.rp-det td.muted{color:var(--mu)}
+.rp-minis{display:grid;grid-template-columns:1fr 1fr;gap:3mm}
+.rp-minis .rp-det{padding:2.5mm 4mm}
+.rp-minis .rp-det h3{font-size:12pt;margin-bottom:1mm}
+.rp-det td{padding:.55mm 0}
+.rp-areas{display:flex;flex-direction:column;gap:1.4mm}
+.rp-area{display:grid;grid-template-columns:30mm 1fr 22mm;gap:3mm;align-items:center;font-size:9pt}
+.rp-area .nm{font-weight:600}
+.rp-area .tr{display:flex;height:4mm;border-radius:.8mm;overflow:hidden;background:#eef1f4}
+.rp-area .tr i.p{background:var(--po)} .rp-area .tr i.n{background:var(--ne)}
+.rp-area .v{text-align:right;font-variant-numeric:tabular-nums}
+.rp-lessons{display:grid;grid-template-columns:1fr 1fr;gap:2.5mm}
+.rp-lessons p{margin:0;padding:2.6mm 3.2mm;border-left:.8mm solid var(--ac);background:#f4f6f8;font-size:9.5pt;break-inside:avoid}
+.rp-meet{border:.4mm solid var(--i);border-radius:2.5mm;padding:4.5mm 5mm;display:flex;flex-direction:column;gap:3mm;break-inside:avoid}
+.rp-meet h3{margin:0;font-family:var(--display);font-size:15pt}
+.rp-q{display:grid;grid-template-columns:6mm 1fr;gap:2mm}
+.rp-q b{font-family:var(--display);font-size:13pt;color:var(--ac)}
+.rp-q .lines{height:11mm;background:repeating-linear-gradient(to bottom,transparent 0,transparent 5mm,var(--li) 5mm,var(--li) 5.3mm)}
+.rp-meet table{width:100%;border-collapse:collapse;font-size:9pt}
+.rp-meet th{text-align:left;font-size:7.5pt;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);padding:1mm 2mm 1mm 0;border-bottom:.3mm solid var(--i)}
+.rp-meet td{height:9mm;border-bottom:.2mm solid var(--li)}
+.rp-foot{margin-top:auto;display:flex;justify-content:space-between;gap:6mm;padding-top:2.5mm;border-top:.2mm solid var(--li);font-size:7.5pt;color:var(--mu)}
+@media print{
+  @page{size:A4;margin:0}
+  html,body{background:#fff!important}
+  body::before,.bar,.progress,.rp-tools{display:none!important}
+  .wrap{max-width:none!important;padding:0!important;margin:0!important}
+  .stack{gap:0!important}
+  .rp-wrap{height:auto!important;overflow:visible!important}
+  .rp-doc{transform:none!important;gap:0!important}
+  .rp-page{box-shadow:none!important;break-after:page;page-break-after:always}
+  .rp-page:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+<title>Status 1 Debrief</title>
+<style>
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/barlow-condensed-500.woff) format('woff')}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/barlow-condensed-600.woff) format('woff')}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/barlow-condensed-700.woff) format('woff')}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/barlow-400.woff) format('woff')}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/barlow-500.woff) format('woff')}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/barlow-600.woff) format('woff')}
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+(function(){
+"use strict";
+const TAGS=[
+ {g:"Team",items:[["kom","Kommunikation"],["fue","Führung & Entscheidung"],["spk","Bedenken ansprechen"]]},
+ {g:"Ablauf",items:[["anf","Anfahrt & Navigation"],["lag","Lageeinschätzung"],["mat","Material & Gerät"],["med","Medikamente"],["zei","Zeitmanagement"],["dok","Dokumentation"]]},
+ {g:"Schnittstellen",items:[["lst","Leitstelle"],["nef","Notarzt / NEF"],["fwp","Feuerwehr / Polizei"],["kla","Klinik-Anmeldung"],["zna","ZNA-Übergabe"],["rmt","Weitere Rettungsmittel (RTW, RTH)"]]},
+ {g:"Mensch",items:[["mue","Müdigkeit"],["str","Stress & Schreckmoment"],["eig","Eigenschutz"]]}
+];
+const TAGNAME={},TAGGROUP={};
+TAGS.forEach(g=>g.items.forEach(([id,n])=>{TAGNAME[id]=n;TAGGROUP[id]=g.g}));
+const CATS=["Internistisch","Trauma","Reanimation","Kind","Transport","Sonstiges"];
+const DET={
+ zna:{places:"kliniken",asp:["Wartezeit","Ansprechpartner","Übergabe-Ablauf","Umgangston","Aufnahmekapazität"]},
+ kla:{places:"kliniken",asp:["Voranmeldung erreicht","Rückfragen","Zuweisung","Umgangston"]},
+ lst:{places:"leitstellen",asp:["Alarmierung","Einsatzinformationen","Rückmeldung","Nachforderung","Funkverkehr"]},
+ nef:{asp:["Absprache","Eintreffen","Übergabe","Zusammenarbeit"]},
+ fwp:{asp:["Absprache","Zugang & Rettung","Einsatzleitung"]},
+ anf:{asp:["Adresse unklar","Navigation","Verkehr","Zufahrt"]},
+ mat:{asp:["Fehlte","Defekt","Ungünstig gelagert"]},
+ dok:{asp:["Zeitaufwand","Software / Tablet","Unklare Vorgaben","Übergabeprotokoll"]},
+ eig:{asp:["Aggression / Gewalt","Verkehr","Infektionsschutz","Absicherung der Einsatzstelle"]}
+};
+const MIN_NEG=3;
+// Entwurf: Einrichtungen rund um den Westerwald (Stand Okt. 2026, bitte vor Ort prüfen). Zeilen mit # = Überschrift in der Auswahlliste.
+const KL_FAV=["DRK-Krankenhaus Hachenburg","Diakonie Klinikum Kirchen","Brüderkrankenhaus Montabaur","Herz-Jesu-Krankenhaus Dernbach","Ev. Krankenhaus Selters","Marienhaus St. Elisabeth Neuwied","GKM Kemperhof Koblenz","GKM Ev. Stift St. Martin Koblenz","Bundeswehrzentralkrankenhaus Koblenz","Diakonie Klinikum Jung-Stilling Siegen","Kreisklinikum Siegen","Dill-Kliniken Dillenburg","St. Vincenz Limburg"];
+const KL_MORE=["# Rheinland-Pfalz","DRK-Krankenhaus Neuwied","Kath. Klinikum Koblenz, Brüderhaus","Kath. Klinikum Koblenz, Marienhof","GKM St. Elisabeth Mayen","St. Nikolaus-Stiftshospital Andernach","GKM Paulinenstift Nastätten","GKM Heilig Geist Boppard","Hunsrück Klinik Simmern","Marienhaus Klinikum Bad Neuenahr-Ahrweiler","Universitätsmedizin Mainz","Kath. Klinikum Mainz","# Nordrhein-Westfalen","Marien Kliniken Siegen","DRK-Kinderklinik Siegen","Diakonie Klinikum Bethesda Freudenberg","St. Martinus-Hospital Olpe","Helios Klinik Attendorn","St. Josef-Hospital Lennestadt","Kreiskrankenhaus Waldbröl","Kreiskrankenhaus Gummersbach","Helios Klinikum Siegburg","GFO Kliniken Troisdorf","Asklepios Kinderklinik Sankt Augustin","GFO Klinik Bad Honnef","Krankenhaus Rheinbach","Universitätsklinikum Bonn","Johanniter-Krankenhaus Bonn","Johanniter Waldkrankenhaus Bonn","GFO St. Marien-Hospital Bonn","GFO St. Josef-Hospital Bonn-Beuel","Gemeinschaftskrankenhaus Bonn","Malteser Krankenhaus Bonn/Rhein-Sieg","Helios Klinikum Bonn/Rhein-Sieg","Marienhospital Euskirchen","Kreiskrankenhaus Mechernich","# Hessen","Klinikum Wetzlar","Kreiskrankenhaus Weilburg","Universitätsklinikum Gießen","Ev. Krankenhaus Mittelhessen Gießen","Hochtaunus-Kliniken Usingen","Helios HSK Wiesbaden","St. Josefs-Hospital Wiesbaden","Asklepios Paulinen Klinik Wiesbaden","St. Josefs-Hospital Rheingau Rüdesheim"];
+const LS_FAV=["ILS Montabaur","ILS Koblenz","Leitstelle Siegen-Wittgenstein","Leitstelle Lahn-Dill","Leitstelle Limburg-Weilburg"];
+const LS_MORE=["# Nordrhein-Westfalen","Leitstelle Kreis Olpe","Leitstelle Oberbergischer Kreis","Leitstelle Rhein-Sieg-Kreis","Leitstelle Bonn","Leitstelle Kreis Euskirchen","# Hessen","Leitstelle Rheingau-Taunus","Leitstelle Wiesbaden"];
+const KEY="status1.v1";
+
+function blank(){return{counts:{},debriefs:0,cats:{},lessons:[],board:[],place:{},asp:{},demo:false,since:TODAY(),history:[],collected:[],undo:null,snapId:null,settings:{station:"",setupDone:false,askCat:false,pin:"0000",kliniken:KL_FAV,klinikenMore:KL_MORE,leitstellen:LS_FAV,leitstellenMore:LS_MORE}}}
+function load(){
+  try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);const b=blank();const s=Object.assign(b.settings,o.settings||{});
+    if(JSON.stringify(s.kliniken)==='["Klinik A","Klinik B","Klinik C"]'){s.kliniken=KL_FAV;s.klinikenMore=KL_MORE}
+    if(!s.kliniken.includes("Ev. Krankenhaus Selters")&&(s.klinikenMore||[]).includes("Ev. Krankenhaus Selters")&&s.kliniken.join("|")===KL_FAV.filter(x=>x!=="Ev. Krankenhaus Selters").join("|")){s.kliniken=KL_FAV;s.klinikenMore=s.klinikenMore.filter(x=>x!=="Ev. Krankenhaus Selters")}
+    if(JSON.stringify(s.leitstellen)==='["Leitstelle"]'){s.leitstellen=LS_FAV;s.leitstellenMore=LS_MORE}
+    if(!o.settings||o.settings.setupDone===undefined)s.setupDone=!!(s.pin&&s.pin!=="0000");
+    return Object.assign(b,o,{settings:s})}}catch(e){}
+  return blank();
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
+let db=load();
+
+const app=document.getElementById("app");
+let view="home", run=null, unlocked=false, sortMode="neg", ui={};
+let wake=null;
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function fmt(sec){const s=Math.abs(Math.round(sec));return (sec<0?"+":"")+Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function lockScreen(){try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>wake=l).catch(()=>{})}catch(e){}}
+function unlockScreen(){try{wake&&wake.release()}catch(e){}wake=null}
+
+function steps(){const s=["checkin","pos","neg","take"];if(db.settings.askCat)s.push("cat");s.push("feedback");return s}
+
+const PROMPTS={
+ checkin:{q:"Ist für alle alles okay?",kurz:"Kurz in die Runde fragen. Eine ehrliche Antwort reicht, niemand muss etwas begründen.",lang:"Ruhig einen Moment Pause lassen. Wer nicht reden möchte, muss nicht."},
+ pos:{q:"Was lief gut?",kurz:"Jeder nennt einen Punkt. Tippt an, wozu er gehört.",lang:"Was genau hat gut funktioniert, und warum? Wer hat was beigetragen? Was davon wollen wir beibehalten?"},
+ neg:{q:"Was machen wir nächstes Mal besser?",kurz:"Es geht um Abläufe, nicht um Schuld. „Ich“-Sätze statt „du hast“.",lang:"Wo wurde es eng? Was hätte geholfen? Lag es an uns oder an einer Schnittstelle? Was war überraschend?"},
+ take:{q:"Was nehmen wir mit?",kurz:"Ein Satz, den ihr beim nächsten Einsatz anders oder genauso macht.",lang:"Einigt euch auf einen Punkt. Lieber eine konkrete Sache als drei allgemeine."},
+ cat:{q:"Welche Einsatzart?",kurz:"Freiwillig. Hilft der Wache bei der Auswertung. Ihr könnt diesen Schritt überspringen.",lang:"Freiwillig. Hilft der Wache bei der Auswertung. Ihr könnt diesen Schritt überspringen."},
+ feedback:{q:"Noch eine Minute für Feedback?",kurz:"Optional. Jeder sagt dem anderen einen Punkt, nach den Regeln unten.",lang:"Jeder gibt dem anderen ein Feedback: zuerst etwas Gutes, dann ein Wunsch."}
+};
+
+function bar(){
+  let right="";
+  if(view==="flow"&&run){right=`<div class="timer" id="timer" aria-live="off"></div>`}
+  return `<header class="bar"><button class="brand" data-a="home" aria-label="Zur Startseite"><span class="key s">1</span><b class="wm">Status 1<small>Debrief</small></b></button>${right}</header>`+
+   (view==="flow"&&run?`<div class="progress"><i id="prog"></i></div>`:"");
+}
+
+function chipGrid(sel,mode){
+  const det=run.det[mode];
+  return `<div class="stack mode-${mode}">`+TAGS.map(g=>`<div class="group"><div class="eyebrow">${g.g}</div><div class="chips">`+
+   g.items.map(([id,n])=>{
+     let h=`<button class="chip" data-a="tag" data-id="${id}" data-mode="${mode}" aria-pressed="${sel.has(id)}">${n}</button>`;
+     const D=DET[id];
+     if(D&&sel.has(id)){
+       const d=det[id]||{place:null,asp:[]};
+       const pl=D.places?(db.settings[D.places]||[]):[];
+       const more=D.places?(db.settings[D.places+"More"]||[]):[];
+       const inMore=more.includes(d.place);
+       h+=`<div class="detail"><div class="small"><b>${esc(n)}</b> genauer, wenn ihr wollt${D.places?" · nur Einrichtungen, nie Personen":""}</div>`+
+        ((pl.length||more.length)?`<div class="dlabel">Wo?</div><div class="minis">${pl.map(p=>`<button class="mini" data-a="dplace" data-id="${id}" data-mode="${mode}" data-v="${esc(p)}" aria-pressed="${d.place===p}">${esc(p)}</button>`).join("")}</div>${more.length?`<select class="msel${inMore?" on":""}" data-id="${id}" data-mode="${mode}" aria-label="Weitere Einrichtungen"><option value="">${inMore?"– keine Auswahl –":"Weitere …"}</option>${optList(more,d.place)}</select>`:""}`:"")+
+        `<div class="dlabel">Was genau?</div><div class="minis">${D.asp.map(x=>`<button class="mini" data-a="dasp" data-id="${id}" data-mode="${mode}" data-v="${esc(x)}" aria-pressed="${d.asp.includes(x)}">${esc(x)}</button>`).join("")}</div>`+
+        (mode==="neg"&&D.places?`<div class="small">Eine Einrichtung erscheint in der Auswertung erst ab ${MIN_NEG} Nennungen.</div>`:"")+`</div>`;
+     }
+     return h;
+   }).join("")+
+   `</div></div>`).join("")+`</div>`;
+}
+function optList(list,sel){
+  let h="",open=false;
+  list.forEach(p=>{if(p.startsWith("#")){if(open)h+="</optgroup>";h+=`<optgroup label="${esc(p.slice(1).trim())}">`;open=true}
+    else h+=`<option value="${esc(p)}"${sel===p?" selected":""}>${esc(p)}</option>`});
+  return h+(open?"</optgroup>":"");
+}
+function detailHtml(id){
+  const D=DET[id];if(!D)return "";
+  const out=[];
+  ["pos","neg"].forEach(m=>{
+    const pre=m+"|"+id+"|", lab=m==="pos"?"lief gut":"besser machen";
+    const shown=[];let hidden=0;
+    Object.keys(db.place||{}).filter(k=>k.startsWith(pre)).sort((a,b)=>db.place[b]-db.place[a]).forEach(k=>{const c=db.place[k];if(m==="neg"&&c<MIN_NEG)hidden+=c;else shown.push(esc(k.slice(pre.length))+" "+c+"×")});
+    if(shown.length||hidden)out.push(`<div><b class="${m==='pos'?'p':'n'}">${lab}, wo:</b> ${shown.join(" · ")}${hidden?(shown.length?" · ":"")+hidden+"× ohne Ortsangabe (unter "+MIN_NEG+" je Einrichtung)":""}</div>`);
+    const asp=Object.keys(db.asp||{}).filter(k=>k.startsWith(pre)).sort((a,b)=>db.asp[b]-db.asp[a]).map(k=>esc(k.slice(pre.length))+" "+db.asp[k]+"×");
+    if(asp.length)out.push(`<div><b class="${m==='pos'?'p':'n'}">${lab}, was:</b> ${asp.join(" · ")}</div>`);
+  });
+  return out.length?`<div class="dlines">${out.join("")}</div>`:"";
+}
+
+function rulesCard(){
+  return `<div class="rules">
+   <div class="card"><h3>Feedback geben</h3>
+    <ul><li>Mit etwas Positivem beginnen.</li></ul>
+    <div class="www">
+     <div><b>W</b><span><strong>Wahrnehmung</strong><em>„Mir ist aufgefallen, dass …“</em></span></div>
+     <div><b>W</b><span><strong>Wirkung</strong><em>„Das hat bei mir … ausgelöst.“</em></span></div>
+     <div><b>W</b><span><strong>Wunsch</strong><em>„Ich würde mir wünschen, dass …“</em></span></div>
+    </div>
+    <ul>
+     <li>Ich-Botschaften statt „man“ oder „du immer“.</li>
+     <li>Beschreiben, nicht bewerten: das Verhalten, nicht die Person.</li>
+     <li>Konkret und zeitnah. Nur ansprechen, was sich ändern lässt.</li>
+     <li>Kurz halten.</li>
+    </ul></div>
+   <div class="card"><h3>Feedback nehmen</h3>
+    <ul>
+     <li>Zuhören und ausreden lassen.</li>
+     <li>Nicht rechtfertigen oder verteidigen.</li>
+     <li>Bei Unklarheit nachfragen.</li>
+     <li>Bedanken. Was du annimmst, entscheidest du selbst.</li>
+    </ul></div>
+  </div>`;
+}
+
+function vHome(){
+  return `<div class="stack">
+   ${joinMsg?`<div class="okmsg">${esc(joinMsg)}</div>`:""}
+   ${(()=>{const f=unseenFzg().length;return f?`<button class="s0" data-a="go" data-v="wall"><span class="key s0k">!</span><span><b>Dringender Sprechwunsch: ${f===1?"1 Hinweis":f+" Hinweise"} zum Fahrzeug</b><br><small>Vor dem nächsten Einsatz kurz lesen</small></span></button>`:""})()}
+   <div class="hero"><span class="key xl" aria-hidden="true">1</span>
+    <div class="stack" style="gap:6px"><h1>Erst Debrief, dann Status 1.</h1></div></div>
+   <p class="lead">Zwei Minuten auf der Rückfahrt. Wer nicht fährt, liest vor. Die App gibt die Fragen und die Zeit vor.</p>
+   <div class="facts"><span class="fact">Anonym</span><span class="fact">Ohne Uhrzeit</span><span class="fact">Ohne Namen &amp; Patientendaten</span><span class="fact">Nur auf diesem Gerät</span></div>
+   <button class="btn primary" data-a="start" data-mode="kurz">Debrief starten <small>2 Min.</small></button>
+   <div class="two">
+    <button class="btn" data-a="start" data-mode="lang">Ausführlich<br><small>5 Min. an der Wache</small></button>
+    <button class="btn warn" data-a="go" data-v="heavy">Belastender<br>Einsatz</button>
+   </div>
+   <div class="linkrow">
+    <button class="tile" data-a="go" data-v="wall"><b>Dringender Sprechwunsch</b><span>${(()=>{const B=db.board||[],f=B.filter(e=>e.k==="fzg").length,l=B.length-f;return [f?f+" zum Fahrzeug":"",l?l+(l===1?" Lehre":" Lehren"):""].filter(Boolean).join(" · ")||"Hinweise für die nächste Besatzung"})()}</span></button>
+    <button class="tile" data-a="go" data-v="rules"><b>Feedback-Regeln</b><span>Geben &amp; nehmen</span></button>
+    <button class="tile" data-a="go" data-v="stats"><b>Auswertung</b><span>Für Wachenleitung, mit PIN</span></button>
+    <button class="tile" data-a="go" data-v="settings"><b>Einstellungen</b><span>Wache, Kliniken, PIN</span></button>
+   </div>
+   <p class="small">Prototyp v0.1 · Daten bleiben im Browser dieses Geräts.</p>
+  </div>`;
+}
+
+function vHeavy(){
+  return `<div class="stack">
+   <div class="eyebrow">Belastender Einsatz</div>
+   <h2>Erst um euch kümmern.</h2>
+   <div class="card"><ul>
+    <li>Fragt, wie es dem anderen geht. Zuhören reicht, analysieren müsst ihr jetzt nichts.</li>
+    <li>Niemand muss über Gefühle reden. Wer reden möchte, soll die Möglichkeit haben.</li>
+    <li>Gebt der Wachenleitung Bescheid, wenn ihr eine Pause braucht.</li>
+    <li>Die Einsatznachsorge (PSNV-E) erreicht ihr über eure Leitstelle oder Wachenleitung. Sie ist für genau solche Einsätze da.</li>
+   </ul></div>
+   <div class="hint">Dieses Debrief ist kein Ersatz für Einsatznachsorge. Es geht nur um den Ablauf und die Zusammenarbeit, und auch das kann warten.</div>
+   <button class="btn" data-a="start" data-mode="kurz">Kurzes Debrief zum Ablauf</button>
+   <button class="btn ghost" data-a="home">Zurück</button>
+  </div>`;
+}
+
+function vFlow(){
+  const st=steps(), key=st[run.step], P=PROMPTS[key], mod=run.mode==="lang"?P.lang:P.kurz;
+  const n=run.step+1, total=st.length;
+  let body="", next=`<button class="btn primary" data-a="next">Weiter</button>`;
+  if(key==="checkin"){
+    body=run.help?`<div class="card"><h3>Gut, dass ihr darauf achtet.</h3><ul>
+      <li>Sprecht es jetzt an oder nach der Rückkehr auf der Wache.</li>
+      <li>Wachenleitung informieren, wenn eine Pause nötig ist.</li>
+      <li>Einsatznachsorge (PSNV-E) über Leitstelle oder Wachenleitung.</li>
+      <li>Nichts davon wird hier gespeichert.</li></ul></div>`:"";
+    next=run.help?`<button class="btn primary" data-a="next">Weiter zum Debrief</button>`:
+      `<div class="stack" style="gap:10px"><button class="btn primary" data-a="next">Ja, alle okay</button><button class="btn" data-a="help">Jemand braucht noch etwas</button></div>`;
+  }else if(key==="pos"){
+    body=`<span class="badge pos">Wird als „lief gut“ gezählt</span>`+chipGrid(run.pos,"pos");
+  }else if(key==="neg"){
+    body=`<span class="badge neg">Wird als „besser machen“ gezählt</span>`+chipGrid(run.neg,"neg");
+  }else if(key==="take"){
+    body=`<div class="stack" style="gap:8px">
+      <label for="lesson" class="eyebrow">Lehre aus dem Einsatz notieren (freiwillig, auch mehrere)</label>
+      <textarea id="lesson" maxlength="140" placeholder="z. B. Bei unklarer Lage früher Notarzt nachfordern.">${esc(run.lesson)}</textarea>
+      <div class="small"><span id="cnt">${run.lesson.length}</span>/140 · Steht für die nächsten Besatzungen unter „Dringender Sprechwunsch“ und bleibt anonym in der Auswertung der Wache, auch wenn sie dort entfernt wird. Keine Namen, keine Patientendaten, keine Orte.</div>
+      <button class="btn" data-a="addn">+ Weitere Lehre</button>
+      ${run.notes.length?`<ul class="lessons">${run.notes.map((e,i)=>`<li><p>${esc(e.t)}</p><button class="x" data-a="deln" data-i="${i}">Entfernen</button></li>`).join("")}</ul>`:""}
+     </div>`;
+  }else if(key==="cat"){
+    body=`<div class="chips">`+CATS.map(c=>`<button class="chip cat" data-a="cat" data-c="${c}" aria-pressed="${run.cat===c}">${c}</button>`).join("")+`</div>`;
+    next=`<button class="btn primary" data-a="next">${run.cat?"Weiter":"Überspringen"}</button>`;
+  }else if(key==="feedback"){
+    body=run.showRules?rulesCard():`<button class="btn" data-a="rulesShow">Feedback-Regeln zeigen</button>`;
+    next=`<button class="btn primary" data-a="finish">Abschließen</button>`;
+  }
+  return `<div class="stack">
+   <div class="eyebrow">Schritt ${n} von ${total}${run.mode==="lang"?" · Ausführlich":""}</div>
+   <div class="readaloud"><span class="tag-read">Vorlesen</span></div>
+   <div class="q">${P.q}</div>
+   <div class="hint">${mod}</div>
+   ${body}
+   ${next}
+   ${run.step>0?`<button class="btn ghost" data-a="back">Zurück</button>`:`<button class="btn ghost" data-a="abort">Abbrechen</button>`}
+  </div>`;
+}
+
+function vDone(){
+  const r=ui.last||{p:0,n:0,l:false};
+  return `<div class="done">
+   <span class="key glow" aria-hidden="true">1</span>
+   <h1>Status 1.</h1>
+   <p class="lead">Debrief erledigt. Wieder einsatzbereit.</p>
+   <div class="row" style="justify-content:center">
+    <span class="badge pos">${r.p} × lief gut</span><span class="badge neg">${r.n} × besser machen</span>${r.l?`<span class="badge" style="background:var(--surface-2)">${r.l} ${r.l===1?"Eintrag":"Einträge"} für die nächste Besatzung</span>`:""}
+   </div>
+   <p class="small">Gespeichert wurden nur die Schlagworte, ohne Uhrzeit und ohne Namen.</p>
+   <button class="btn primary" data-a="home">Fertig</button>
+  </div>`;
+}
+
+function vWall(){
+  const B=db.board||[];
+  const item=([e,i])=>`<li><p>${esc(e.t)}</p><button class="x" data-a="delb" data-i="${i}">${e.k==="fzg"?"Erledigt":"Entfernen"}</button></li>`;
+  const idx=B.map((e,i)=>[e,i]), L=idx.filter(x=>x[0].k!=="fzg"), F=idx.filter(x=>x[0].k==="fzg");
+  const group=(title,sub,arr)=>arr.length?`<div class="card stack" style="gap:8px"><h3>${title}</h3><p class="small" style="margin:0">${sub}</p><ul class="lessons">${arr.map(item).join("")}</ul></div>`:"";
+  return `<div class="stack">
+   <div class="readaloud"><span class="key s" style="background:var(--accent);color:var(--accent-fg);box-shadow:none">!</span><span class="eyebrow">Für die nächste Besatzung</span></div>
+   <h2>Dringender Sprechwunsch</h2>
+   ${(db.board||[]).some(e=>e.k==="fzg")?`<p class="small" style="margin:0">Für diese Schicht als gelesen markiert. Oben auf der Startseite erscheinen die Hinweise zum Fahrzeug erst nach dem nächsten Schichtwechsel wieder.</p>`:""}
+   <p class="lead">Was frühere Besatzungen auf diesem Fahrzeug weitergeben: Lehren aus Einsätzen und Hinweise zum Fahrzeug, ohne Datum und ohne Namen. Entfernte Lehren bleiben anonym in der Auswertung der Wache.</p>
+   ${B.length?group("Lehren aus Einsätzen","Aus Debriefs früherer Besatzungen.",L)+group("Zum Fahrzeug","Defekte, fehlendes Material, Besonderheiten. Bitte als erledigt markieren, wenn behoben.",F):`<div class="hint">Gerade keine Hinweise. Lehren kommen aus dem Debrief, Hinweise zum Fahrzeug direkt von hier.</div>`}
+   <div class="card stack" style="gap:8px"><h3>Hinweis hinzufügen</h3>
+    <div class="seg" role="group" aria-label="Art des Eintrags">
+     <button data-a="wtype" data-t="fzg" aria-pressed="${ui.wtype!=="lehre"}">Hinweis zum Fahrzeug</button>
+     <button data-a="wtype" data-t="lehre" aria-pressed="${ui.wtype==="lehre"}">Lehre</button>
+    </div>
+    <textarea id="wnote" maxlength="140" placeholder="z. B. Absaugpumpe lädt nicht, Ersatzgerät im Fach links."></textarea>
+    <div class="small">Keine Namen, keine Patientendaten. Entfernen kann jede Besatzung, z. B. wenn ein Defekt behoben ist.</div>
+    <button class="btn" data-a="addw">Hinzufügen</button>
+   </div>
+   <button class="btn ghost" data-a="home">Zurück</button></div>`;
+}
+
+function vRules(){return `<div class="stack"><div class="eyebrow">Feedback-Regeln</div><h2>Feedback, das ankommt</h2>${rulesCard()}<button class="btn ghost" data-a="home">Zurück</button></div>`}
+
+function vPin(){
+  return `<div class="stack">
+   <div class="eyebrow">Auswertung</div><h2>PIN eingeben</h2>
+   <p class="lead">Die Auswertung ist für Wachenleitung oder Qualitätsmanagement gedacht.</p>
+   <input type="password" id="pin" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="PIN">
+   ${ui.pinErr?`<div class="err">Falsche PIN. Bitte erneut versuchen.</div>`:""}
+   <button class="btn primary" data-a="pinok">Öffnen</button>
+   ${ui.forgot?`<div class="card stack" style="gap:10px"><h3>PIN vergessen?</h3>
+     <p class="small" style="margin:0">Die PIN lässt sich ohne die alte PIN nicht ändern. Damit niemand die Auswertung einsehen kann, bleibt nur: <b>alle Daten auf diesem Gerät löschen</b> und die App neu einrichten. Hinweise unter „Dringender Sprechwunsch“ und die Kliniklisten werden dabei ebenfalls gelöscht.</p>
+     <label class="small" for="wipe">Zum Bestätigen LÖSCHEN eintippen</label>
+     <input id="wipe" autocomplete="off" autocapitalize="characters" aria-label="LÖSCHEN eintippen">
+     ${ui.wipeErr?`<div class="err">Bitte genau LÖSCHEN eintippen.</div>`:""}
+     <button class="btn warn" data-a="wipe">Alle Daten löschen und neu einrichten</button></div>`
+    :`<button class="linkbtn" data-a="forgot" style="align-self:flex-start">PIN vergessen?</button>`}
+   <button class="btn ghost" data-a="home">Zurück</button></div>`;
+}
+
+function csv(){
+  let s="Schlagwort;Bereich;lief gut;besser machen\n";
+  TAGS.forEach(g=>g.items.forEach(([id,n])=>{const c=db.counts[id]||{pos:0,neg:0};s+=`${n};${g.g};${c.pos};${c.neg}\n`}));
+  s+=`\nDebriefs gesamt;${db.debriefs}\n`;
+  const dl=[];
+  Object.keys(DET).forEach(id=>["pos","neg"].forEach(m=>{const pre=m+"|"+id+"|",lab=m==="pos"?"lief gut":"besser machen";
+    Object.keys(db.place||{}).filter(k=>k.startsWith(pre)).forEach(k=>{const c=db.place[k];if(m==="neg"&&c<MIN_NEG)return;dl.push(`${TAGNAME[id]};Ort: ${k.slice(pre.length)};${lab};${c}`)});
+    Object.keys(db.asp||{}).filter(k=>k.startsWith(pre)).forEach(k=>dl.push(`${TAGNAME[id]};${k.slice(pre.length)};${lab};${db.asp[k]}`))}));
+  if(dl.length)s+="\nDetails;Angabe;Bewertung;Anzahl\n"+dl.join("\n")+"\n";
+  const cats=Object.keys(db.cats);if(cats.length){s+="\nEinsatzart;Anzahl\n";cats.forEach(c=>s+=`${c};${db.cats[c]}\n`)}
+  if(db.lessons.length){s+="\nLehren\n";db.lessons.forEach(l=>s+=`"${l.replace(/"/g,'""')}"\n`)}
+  return s;
+}
+
+function vStats(){
+  if(!unlocked)return vPin();
+  let rows=[];TAGS.forEach(g=>g.items.forEach(([id,n],i)=>{const c=db.counts[id]||{pos:0,neg:0};rows.push({id,n,g:g.g,p:c.pos,m:c.neg,o:rows.length})}));
+  const tp=rows.reduce((a,r)=>a+r.p,0), tn=rows.reduce((a,r)=>a+r.m,0);
+  const max=Math.max(1,...rows.map(r=>r.p+r.m));
+  if(sortMode==="neg")rows.sort((a,b)=>b.m-a.m||b.p-a.p);
+  else if(sortMode==="pos")rows.sort((a,b)=>b.p-a.p||a.m-b.m);
+  else rows.sort((a,b)=>a.o-b.o);
+  const cats=Object.keys(db.cats);
+  return `<div class="stack">
+   <div class="eyebrow">Auswertung · dieses Gerät</div><h2>Wo es läuft und wo es hakt</h2>
+   ${db.demo?`<div class="demo">Beispieldaten zur Ansicht. Über „Zurücksetzen“ entfernen.</div>`:""}
+   <div class="stat-head">
+    <div class="num"><b>${db.debriefs}</b><span>Debriefs</span></div>
+    <div class="num"><b style="color:var(--pos)">${tp}</b><span>× lief gut</span></div>
+    <div class="num"><b style="color:var(--neg)">${tn}</b><span>× besser machen</span></div>
+   </div>
+   ${db.debriefs===0&&!db.demo?`<div class="hint">Noch keine Debriefs auf diesem Gerät. Zum Anschauen können Sie Beispieldaten laden.</div><button class="btn" data-a="demo">Beispieldaten laden</button>`:""}
+   <div class="seg" role="group" aria-label="Sortierung">
+    <button data-a="sort" data-s="neg" aria-pressed="${sortMode==="neg"}">Probleme zuerst</button>
+    <button data-a="sort" data-s="pos" aria-pressed="${sortMode==="pos"}">Stärken zuerst</button>
+    <button data-a="sort" data-s="cat" aria-pressed="${sortMode==="cat"}">Nach Bereich</button>
+   </div>
+   <div class="legend"><span><i style="background:var(--pos)"></i>lief gut</span><span><i style="background:var(--neg)"></i>besser machen</span></div>
+   <p class="small" style="margin:0">Bei „besser machen“ erscheint eine Einrichtung erst ab ${MIN_NEG} Nennungen. So werden Häufungen sichtbar, keine Einzelfälle.</p>
+   <div class="bars">${rows.map(r=>`<div class="barrow ${r.p+r.m?"":"zero"}">
+     <div class="lbl"><b style="font-weight:500">${r.n} <span class="small">· ${r.g}</span></b><span><span class="p">${r.p}</span> / <span class="n">${r.m}</span></span></div>
+     <div class="track" aria-hidden="true"><i class="p" style="width:${r.p/max*100}%"></i><i class="n" style="width:${r.m/max*100}%"></i></div>${detailHtml(r.id)}
+    </div>`).join("")}</div>
+   ${cats.length?`<div class="card"><h3>Einsatzart (freiwillig erfasst)</h3><ul>${cats.map(c=>`<li>${esc(c)}: ${db.cats[c]}</li>`).join("")}</ul></div>`:""}
+   <div class="card"><h3>Lehren</h3>${db.lessons.length?`<ul class="lessons">${db.lessons.map((t,i)=>`<li><p>${esc(t)}</p><button class="x" data-a="dell" data-i="${i}">Löschen</button></li>`).join("")}</ul>`:`<p class="small" style="margin:0">Noch keine gespeichert.</p>`}</div>
+   ${closeCard()}
+   ${mergeCard()}
+   <button class="btn ghost" data-a="lock">Auswertung sperren</button></div>`;
+}
+
+function vSettings(){
+  return `<div class="stack">
+   <div class="eyebrow">Einstellungen</div><h2>Für dieses Gerät</h2>
+   <div class="card stack" style="gap:10px">
+    <label class="check"><input type="checkbox" id="askCat" data-a="askcat" ${db.settings.askCat?"checked":""}> Einsatzart abfragen (freiwillig, überspringbar)</label>
+    <p class="small" style="margin:0">Standardmäßig aus. Auf kleinen Wachen kann die Einsatzart einen Einsatz erkennbar machen.</p>
+   </div>
+   <div class="card stack" style="gap:10px"><h3>Zentrale Auswertung</h3>
+    ${srvStatus()}
+    <p class="small" style="margin:0">Optional. Debriefs werden zusätzlich gebündelt an den Server der Wache übertragen: nur Zählerstände und Lehren, ohne Uhrzeit, ohne Fahrzeug, ohne Namen. Am einfachsten über den QR-Code im Wachenportal verbinden.</p>
+    <label class="small" for="srv">Adresse des Servers</label>
+    <input id="srv" class="srvin" maxlength="120" value="${esc(db.settings.server||"")}" placeholder="z. B. http://192.168.1.20:8099" autocomplete="off">
+    <label class="small" for="scode">Wachen-Code</label>
+    <input id="scode" class="srvin" maxlength="20" value="${esc(db.settings.code||"")}" placeholder="XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters">
+    ${ui.srvMsg?`<div class="${ui.srvOk?"okmsg":"errmsg"}">${esc(ui.srvMsg)}</div>`:""}
+    <div class="two"><button class="btn" data-a="savesrv">Speichern</button><button class="btn" data-a="sendnow" ${db.settings.server&&db.settings.code?"":"disabled"}>Jetzt senden</button></div>
+    ${db.settings.server?`<button class="linkbtn" data-a="unlinksrv" style="align-self:flex-start">Verbindung trennen</button>`:""}
+   </div>
+   <div class="card stack" style="gap:10px"><h3>Schichtwechsel</h3>
+    <p class="small" style="margin:0">Damit die App weiß, wann eine neue Besatzung kommt. Gelesene Hinweise zum Fahrzeug erscheinen erst nach dem nächsten Schichtwechsel wieder oben auf der Startseite. Eigene Uhrzeiten durch Komma trennen.</p>
+    ${shiftPicker("",db.settings.shifts)}
+    ${ui.shMsg?`<div class="${ui.shOk?"okmsg":"errmsg"}">${ui.shMsg}</div>`:""}
+    <button class="btn" data-a="saveshifts">Speichern</button>
+   </div>
+   <div class="card stack" style="gap:10px"><h3>Name der Wache</h3>
+    <p class="small" style="margin:0">Erscheint nur im Bericht, zum Beispiel „Rettungswache Hachenburg“.</p>
+    <input id="station" maxlength="60" value="${esc(db.settings.station||"")}" placeholder="Rettungswache …" aria-label="Name der Wache">
+    ${ui.stMsg?`<div class="small">${ui.stMsg}</div>`:""}
+    <button class="btn" data-a="savestation">Speichern</button>
+   </div>
+   <div class="card stack" style="gap:10px"><h3>Einrichtungen für Ortsangaben</h3>
+    <p class="small" style="margin:0">Eine pro Zeile. Nur Einrichtungen, keine Personen.</p>
+    <p class="small" style="margin:0">Häufig angefahrene erscheinen als Schaltflächen, alle weiteren in einer Auswahlliste. Zeilen mit # am Anfang sind Überschriften in der Liste.</p>
+    <label class="small" for="kliniken">Kliniken – häufig (Schaltflächen)</label>
+    <textarea id="kliniken" rows="6">${esc((db.settings.kliniken||[]).join("\n"))}</textarea>
+    <label class="small" for="klinikenMore">Kliniken – weitere (Auswahlliste)</label>
+    <textarea id="klinikenMore" rows="8">${esc((db.settings.klinikenMore||[]).join("\n"))}</textarea>
+    <label class="small" for="leitstellen">Leitstellen – häufig (Schaltflächen)</label>
+    <textarea id="leitstellen" rows="4">${esc((db.settings.leitstellen||[]).join("\n"))}</textarea>
+    <label class="small" for="leitstellenMore">Leitstellen – weitere (Auswahlliste)</label>
+    <textarea id="leitstellenMore" rows="5">${esc((db.settings.leitstellenMore||[]).join("\n"))}</textarea>
+    ${ui.listMsg?`<div class="small">${ui.listMsg}</div>`:""}
+    <button class="btn" data-a="savelists">Listen speichern</button>
+   </div>
+   <div class="card stack" style="gap:10px"><h3>PIN für die Auswertung</h3>
+    <p class="small" style="margin:0">Die PIN lässt sich nur mit der bisherigen PIN ändern.</p>
+    <input type="password" id="oldpin" inputmode="numeric" maxlength="8" placeholder="Bisherige PIN" autocomplete="off" aria-label="Bisherige PIN">
+    <input type="password" id="newpin" inputmode="numeric" maxlength="8" placeholder="Neue PIN (4 bis 8 Ziffern)" autocomplete="off" aria-label="Neue PIN">
+    <input type="password" id="newpin2" inputmode="numeric" maxlength="8" placeholder="Neue PIN wiederholen" autocomplete="off" aria-label="Neue PIN wiederholen">
+    ${ui.pinMsg?`<div class="${ui.pinOk?"okmsg":"errmsg"}">${ui.pinMsg}</div>`:""}
+    <button class="btn" data-a="setpin">PIN ändern</button>
+   </div>
+   <button class="btn ghost" data-a="home">Zurück</button></div>`;
+}
+
+function render(){
+  const V={home:vHome,heavy:vHeavy,flow:vFlow,done:vDone,wall:vWall,rules:vRules,stats:vStats,settings:vSettings,report:vReport,share:vShare,collect:vCollect,setup:vSetup};
+  if(!db.settings.setupDone&&view!=="flow"&&view!=="done")view="setup";
+  if(view!=="collect")stopCam();
+  app.innerHTML=bar()+(V[view]||vHome)();
+  tick();
+  const ta=document.getElementById("lesson");
+  if(ta)ta.addEventListener("input",()=>{run.lesson=ta.value;const c=document.getElementById("cnt");if(c)c.textContent=ta.value.length});
+  if(view==="report")fitReport();
+  if(view==="share")fillShare();
+}
+function go(v){view=v;ui={...(v==="stats"?{}:{})};if(v==="wall")markSeen();render();window.scrollTo(0,0)}
+// Schichtwechsel: gelesene Fahrzeug-Hinweise erst in der nächsten Schicht wieder oben anzeigen
+function shiftTimes(){const t=(db.settings.shifts||"07:00, 18:00").split(/[,;\s]+/).map(x=>/^(\d{1,2}):(\d{2})$/.exec(x)).filter(Boolean).map(m=>(+m[1])*60+(+m[2])).filter(x=>x>=0&&x<1440).sort((a,b)=>a-b);return t.length?t:[420,1080]}
+function curShift(){const T=shiftTimes(),n=new Date(),m=n.getHours()*60+n.getMinutes();let d=new Date(n),st=null;
+  for(const x of T)if(x<=m)st=x;if(st===null){d.setDate(d.getDate()-1);st=T[T.length-1]}
+  return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+"T"+st}
+function unseenFzg(){const F=(db.board||[]).filter(e=>e.k==="fzg");return db.seen&&db.seen.shift===curShift()?[]:F}
+function markSeen(){db.seen={shift:curShift()};save()}
+const SHIFT_PRESETS=[["07:00, 18:00","07–18 Uhr und 18–07 Uhr"],["07:00, 19:00","07–19 Uhr und 19–07 Uhr"],["06:00, 18:00","06–18 Uhr und 18–06 Uhr"],["06:00, 14:00, 22:00","Drei Schichten: 06, 14 und 22 Uhr"],["07:00","24-Stunden-Dienst, Wechsel um 07 Uhr"],["custom","Eigene Uhrzeiten"]];
+function shiftPicker(px,cur){cur=cur||"07:00, 18:00";const pre=SHIFT_PRESETS.some(x=>x[0]===cur);
+  return `<select id="${px}shiftsel" class="shiftsel" data-px="${px}" aria-label="Schichtzeiten">${SHIFT_PRESETS.map(([v,l])=>`<option value="${v}" ${(pre?v===cur:v==="custom")?"selected":""}>${l}</option>`).join("")}</select>
+   <input id="${px}shifts" class="shiftin" maxlength="60" value="${esc(cur)}" placeholder="z. B. 06:30, 18:30" aria-label="Eigene Schichtwechsel-Uhrzeiten" ${pre?"hidden":""}>`}
+function readShift(px){const sel=(document.getElementById(px+"shiftsel")||{}).value||"07:00, 18:00";
+  if(sel!=="custom")return sel;
+  const parts=((document.getElementById(px+"shifts")||{}).value||"").trim().split(/[,;\s]+/).filter(Boolean);
+  const ok=parts.length>0&&parts.every(x=>{const m=/^(\d{1,2}):(\d{2})$/.exec(x);return m&&+m[1]<24&&+m[2]<60});
+  return ok?parts.map(x=>x.padStart(5,"0")).join(", "):null}
+
+function tick(){
+  if(view!=="flow"||!run)return;
+  const left=run.dur-(Date.now()-run.t0)/1000;
+  const t=document.getElementById("timer"),p=document.getElementById("prog");
+  if(t){t.textContent=fmt(left);t.classList.toggle("over",left<0)}
+  if(p)p.style.width=Math.min(100,(1-left/run.dur)*100)+"%";
+}
+setInterval(tick,500);
+
+function flushNote(){const t=(run.lesson||"").trim().slice(0,140);if(t){run.notes.push({t,k:"lehre"});run.lesson=""}}
+function addNote(t,k){
+  db.board=db.board||[];
+  db.board.splice(Math.floor(Math.random()*(db.board.length+1)),0,{t,k});
+  if(k==="lehre")db.lessons.splice(Math.floor(Math.random()*(db.lessons.length+1)),0,t);
+}
+function finish(){
+  run.pos.forEach(id=>{(db.counts[id]=db.counts[id]||{pos:0,neg:0}).pos++});
+  run.neg.forEach(id=>{(db.counts[id]=db.counts[id]||{pos:0,neg:0}).neg++});
+  db.debriefs++;
+  db.place=db.place||{};db.asp=db.asp||{};
+  ["pos","neg"].forEach(m=>{(m==="pos"?run.pos:run.neg).forEach(id=>{const d=run.det[m][id];if(!d)return;
+    if(d.place){const k=m+"|"+id+"|"+d.place;db.place[k]=(db.place[k]||0)+1}
+    d.asp.forEach(x=>{const k=m+"|"+id+"|"+x;db.asp[k]=(db.asp[k]||0)+1})})});
+  if(run.cat)db.cats[run.cat]=(db.cats[run.cat]||0)+1;
+  flushNote();
+  run.notes.forEach(e=>addNote(e.t,e.k));
+  queueDelta(run);
+  const l=run.notes.length;
+  save();
+  const last={p:run.pos.size,n:run.neg.size,l:l};
+  run=null;unlockScreen();view="done";ui={last};render();window.scrollTo(0,0);
+}
+
+function loadDemo(){
+  const d={kom:[14,6],fue:[11,4],spk:[2,3],anf:[8,5],lag:[10,2],mat:[6,7],med:[4,1],zei:[3,6],dok:[2,11],lst:[9,8],nef:[11,3],fwp:[6,2],kla:[3,9],zna:[5,12],rmt:[4,2],mue:[0,7],str:[1,4],eig:[3,1]};
+  Object.keys(d).forEach(k=>db.counts[k]={pos:d[k][0],neg:d[k][1]});
+  db.debriefs=31;db.demo=true;
+  {const d=new Date();db.since=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01";
+   const pm=new Date(d.getFullYear(),d.getMonth()-1,1),pe=new Date(d.getFullYear(),d.getMonth(),0),f=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
+   db.history=[{from:f(pm),to:f(pe),n:28,merged:false,t:{kom:[11,7],fue:[9,4],spk:[1,5],anf:[7,6],lag:[9,3],mat:[5,9],med:[4,2],zei:[3,5],dok:[2,8],lst:[8,7],nef:[10,3],fwp:[5,2],kla:[2,8],zna:[3,17],rmt:[3,2],mue:[1,6],str:[1,3],eig:[2,1]}}];}
+  db.place={"neg|zna|Klinik B":7,"pos|zna|Klinik A":9,"neg|zna|Klinik A":1,"neg|zna|Klinik C":2,"pos|zna|Klinik C":3,"neg|lst|Leitstelle":5,"pos|lst|Leitstelle":6};
+  db.asp={"neg|zna|Wartezeit":6,"neg|zna|Ansprechpartner":4,"pos|zna|Übergabe-Ablauf":8,"neg|lst|Rückmeldung":5,"pos|lst|Alarmierung":6,"neg|eig|Aggression / Gewalt":3,"neg|dok|Software / Tablet":7};
+  db.lessons=["Voranmeldung in der ZNA mit Ankunftszeit und Kernproblem in einem Satz.","Bei unklarer Lage früher Notarzt nachfordern.","Rucksack nach jedem Einsatz sofort auffüllen, nicht erst an der Wache.","Übergabe nach Schema, auch wenn es hektisch ist."];
+  save();render();
+}
+
+
+function vSetup(){
+  return `<div class="stack">
+   <div class="eyebrow">Einrichtung</div><h2>Willkommen bei Status 1</h2>
+   <p class="lead">Einmal kurz einrichten, dann ist das Fahrzeughandy bereit. Das macht in der Regel die Wachenleitung.</p>
+   <div class="card stack" style="gap:10px"><h3>1 · Name der Wache</h3>
+    <p class="small" style="margin:0">Erscheint im Bericht. Lässt sich später unter Einstellungen ändern.</p>
+    <input id="su_station" maxlength="60" value="${esc(ui.su_station!==undefined?ui.su_station:(db.settings.station||""))}" placeholder="z. B. Rettungswache Hachenburg" aria-label="Name der Wache">
+   </div>
+   <div class="card stack" style="gap:10px"><h3>2 · PIN für die Auswertung</h3>
+    <p class="small" style="margin:0">Schützt Auswertung und Bericht. 4 bis 8 Ziffern. Später nur mit dieser PIN änderbar, also bitte für die Wachenleitung notieren.</p>
+    <input type="password" id="su_pin" inputmode="numeric" maxlength="8" placeholder="PIN" autocomplete="off" aria-label="PIN">
+    <input type="password" id="su_pin2" inputmode="numeric" maxlength="8" placeholder="PIN wiederholen" autocomplete="off" aria-label="PIN wiederholen">
+   </div>
+   <div class="card stack" style="gap:10px"><h3>3 · Schichtzeiten</h3>
+    <p class="small" style="margin:0">Wann wechselt die Besatzung auf diesem Fahrzeug? Hinweise zum Fahrzeug werden zu Beginn jeder Schicht einmal oben angezeigt.</p>
+    ${shiftPicker("su_",ui.su_shifts||db.settings.shifts)}
+   </div>
+   ${ui.suErr?`<div class="errmsg">${ui.suErr}</div>`:""}
+   <button class="btn primary" data-a="setupdone">Einrichtung abschließen</button>
+   <p class="small" style="margin:0">Kliniken, Leitstellen und weitere Optionen finden Sie danach unter Einstellungen. Es werden keine Namen von Mitarbeitenden und keine Patientendaten gespeichert.</p>
+  </div>`;
+}
+app.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+  if(a==="setupdone"){const g=x=>((document.getElementById(x)||{}).value||"").trim(),st=g("su_station"),p1=g("su_pin"),p2=g("su_pin2"),sh=readShift("su_");
+    if(!/^\d{4,8}$/.test(p1)){ui={suErr:"Die PIN muss aus 4 bis 8 Ziffern bestehen.",su_station:st}}
+    else if(p1!==p2){ui={suErr:"Die beiden PINs stimmen nicht überein.",su_station:st}}
+    else if(p1==="0000"||p1==="1234"){ui={suErr:"Bitte keine leicht zu erratende PIN wie 0000 oder 1234 wählen.",su_station:st}}
+    else if(!sh){ui={suErr:"Bitte eigene Schichtzeiten im Format 07:00 eingeben, durch Komma getrennt.",su_station:st}}
+    else{db.settings.station=st.slice(0,60);db.settings.pin=p1;db.settings.shifts=sh;db.settings.setupDone=true;save();unlocked=false;view="home";ui={}}
+    render();window.scrollTo(0,0)}
+  else if(a==="forgot"){ui.forgot=true;render()}
+  else if(a==="saveshifts"){const v=readShift("");
+    if(v){db.settings.shifts=v;db.seen=null;save();ui={shMsg:"Gespeichert.",shOk:true}}else{ui={shMsg:"Bitte Uhrzeiten im Format 07:00 eingeben, durch Komma getrennt."}}render()}
+  else if(a==="wipe"){const v=((document.getElementById("wipe")||{}).value||"").trim().toUpperCase();
+    if(v!=="LÖSCHEN"&&v!=="LOESCHEN"){ui.wipeErr=true;render();return}
+    try{localStorage.removeItem(KEY)}catch(err){}db=blank();save();unlocked=false;view="setup";ui={};render();window.scrollTo(0,0)}
+});
+
+// ---------- Zentrale Auswertung (Server) ----------
+const BATCH=3;
+let joinMsg=null,sending=false;
+function normCode(c){c=String(c||"").replace(/[^0-9a-z]/gi,"").toUpperCase();return c.length===12?c.slice(0,4)+"-"+c.slice(4,8)+"-"+c.slice(8):""}
+function curMonth(){return TODAY().slice(0,7)}
+function queueDelta(r){
+  if(!db.settings.server||!db.settings.code)return;
+  db.outbox=db.outbox||{};const m=curMonth(),o=db.outbox[m]=db.outbox[m]||{month:m,n:0,counts:{},place:{},asp:{},cats:{},lessons:[]};
+  o.n++;
+  r.pos.forEach(id=>{(o.counts[id]=o.counts[id]||{pos:0,neg:0}).pos++});
+  r.neg.forEach(id=>{(o.counts[id]=o.counts[id]||{pos:0,neg:0}).neg++});
+  ["pos","neg"].forEach(md=>{(md==="pos"?r.pos:r.neg).forEach(id=>{const d=r.det[md][id];if(!d)return;
+    if(d.place){const k=md+"|"+id+"|"+d.place;o.place[k]=(o.place[k]||0)+1}
+    d.asp.forEach(x=>{const k=md+"|"+id+"|"+x;o.asp[k]=(o.asp[k]||0)+1})})});
+  if(r.cat)o.cats[r.cat]=(o.cats[r.cat]||0)+1;
+  r.notes.forEach(e=>{if(e.k==="lehre")o.lessons.push(e.t)});
+  if(!db.outboxSince)db.outboxSince=TODAY();
+  save();setTimeout(()=>trySend(false),1500+Math.random()*8000);
+}
+function pendingN(){return Object.values(db.outbox||{}).reduce((a,o)=>a+o.n,0)}
+async function trySend(force){
+  const S=db.settings;if(sending||!S.server||!S.code)return false;
+  const n=pendingN();if(!n)return false;
+  if(!force&&n<BATCH&&!(db.outboxSince&&db.outboxSince<TODAY()))return false;
+  if(location.protocol==="https:"&&/^http:/i.test(S.server)){db.sendErr="Diese App-Version läuft über https und darf den Testserver (http) nicht erreichen. Bitte die App über den QR-Code im Wachenportal öffnen.";save();return false}
+  sending=true;
+  try{
+    const packets=Object.values(db.outbox).sort((a,b)=>a.month<b.month?-1:1).slice(0,3).map(o=>Object.assign({},o,{lessons:shuffle(o.lessons.slice()).slice(0,20)}));
+    const res=await fetch(S.server.replace(/\/+$/,"")+"/api/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:S.code,packets})});
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(j.error||("Fehler "+res.status));
+    packets.forEach(p=>{delete db.outbox[p.month]});
+    if(!pendingN())db.outboxSince=null;
+    db.lastSent=TODAY();db.sendErr=null;save();sending=false;
+    if(view==="settings")render();return true;
+  }catch(e){db.sendErr=e.message==="Failed to fetch"?"Server nicht erreichbar. Die Debriefs bleiben gespeichert und werden später übertragen.":e.message;save();sending=false;if(view==="settings")render();return false}
+}
+function srvStatus(){const S=db.settings;if(!S.server||!S.code)return `<p class="small" style="margin:0"><b>Nicht verbunden.</b></p>`;
+  const n=pendingN();
+  return `<p class="small" style="margin:0"><b>Verbunden</b> mit ${esc(S.server)} · Code …${esc(S.code.slice(-4))}<br>${n?n+(n===1?" Debrief wartet":" Debriefs warten")+" auf Übertragung (ab "+BATCH+" oder am nächsten Tag)":"Alles übertragen"}${db.lastSent?" · zuletzt am "+dLong(db.lastSent):""}</p>${db.sendErr?`<div class="errmsg">${esc(db.sendErr)}</div>`:""}`}
+(function joinFromLink(){
+  try{const u=new URL(location.href),w=normCode(u.searchParams.get("w"));if(!w)return;
+    const s=u.searchParams.get("s")||(/\/app\/?/.test(u.pathname)?location.origin:"");
+    if(s){db.settings.server=s;db.settings.code=w;save();joinMsg="Mit der Wache verbunden. Debriefs werden ab jetzt gebündelt an die Wache übertragen."}
+    u.searchParams.delete("w");u.searchParams.delete("s");history.replaceState(null,"",u.pathname+u.search+u.hash);
+  }catch(e){}
+})();
+window.addEventListener("online",()=>trySend(false));
+setTimeout(()=>trySend(false),3000);
+app.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+  if(a==="savesrv"){const sv=((document.getElementById("srv")||{}).value||"").trim().replace(/\/+$/,""),cd=normCode((document.getElementById("scode")||{}).value);
+    if(sv&&!/^https?:\/\/[^\s/]+(:\d+)?$/i.test(sv)){ui={srvMsg:"Bitte die Adresse vollständig angeben, zum Beispiel http://192.168.1.20:8099"};return render()}
+    if(sv&&!cd){ui={srvMsg:"Der Wachen-Code hat 12 Zeichen, zum Beispiel K7P4-Q2M9-XH3T."};return render()}
+    db.settings.server=sv;db.settings.code=sv?cd:"";db.sendErr=null;save();ui={srvMsg:sv?"Gespeichert.":"Verbindung getrennt.",srvOk:true};render()}
+  else if(a==="sendnow"){if(b.disabled)return;const ok=await trySend(true);ui={srvMsg:ok?"Übertragen.":(pendingN()?(db.sendErr||"Nicht übertragen."):"Es gibt nichts zu übertragen."),srvOk:ok||!pendingN()};render()}
+  else if(a==="unlinksrv"){db.settings.server="";db.settings.code="";db.outbox={};db.outboxSince=null;db.sendErr=null;save();ui={srvMsg:"Verbindung getrennt. Nicht übertragene Debriefs bleiben nur auf diesem Gerät.",srvOk:true};render()}
+  else if(a==="go"||a==="home"){joinMsg=null}
+});
+
+// ---------- Bericht, Abschluss, Zusammenführen ----------
+function TODAY(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+const MON=["Jan.","Feb.","März","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."];
+function dLong(iso){if(!iso)return"";const p=iso.split("-").map(Number);return p[2]+". "+MON[p[1]-1]+" "+p[0]}
+function rid(){return Math.random().toString(36).slice(2,10)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function emptyData(){return{n:0,counts:{},place:{},asp:{},cats:{},lessons:[],veh:0,from:null,to:null}}
+function addInto(t,x){
+  t.n+=+x.n||0;
+  Object.keys(x.counts||{}).forEach(k=>{const a=t.counts[k]=t.counts[k]||{pos:0,neg:0},b=x.counts[k]||{};a.pos+=+b.pos||0;a.neg+=+b.neg||0});
+  ["place","asp","cats"].forEach(f=>Object.keys(x[f]||{}).forEach(k=>{t[f][k]=(t[f][k]||0)+(+x[f][k]||0)}));
+  t.lessons=t.lessons.concat(x.lessons||[]);
+  t.veh+=+x.veh||1;
+  if(x.from&&(!t.from||x.from<t.from))t.from=x.from;
+  if(x.to&&(!t.to||x.to>t.to))t.to=x.to;
+  return t;
+}
+function ownSnap(){if(!db.snapId){db.snapId=rid();save()}
+  return{v:1,id:db.snapId,from:db.since||null,to:TODAY(),n:db.debriefs,counts:db.counts,place:db.place||{},asp:db.asp||{},cats:db.cats||{},lessons:db.lessons||[],veh:1}}
+function dataset(merged){const d=addInto(emptyData(),ownSnap());if(merged)(db.collected||[]).forEach(c=>addInto(d,c));d.lessons=shuffle(d.lessons.slice());return d}
+function totalsOf(d){const t={};Object.keys(d.counts).forEach(k=>t[k]=[d.counts[k].pos||0,d.counts[k].neg||0]);return t}
+function prevFor(merged){const h=(db.history||[]).filter(x=>!!x.merged===!!merged);return h[h.length-1]||null}
+function pct(c,n){return n?Math.round(c/n*100):0}
+function rRows(d){const r=[];TAGS.forEach(g=>g.items.forEach(([id,n])=>{const c=d.counts[id]||{};r.push({id,n,g:g.g,p:c.pos||0,m:c.neg||0})}));return r}
+function topAsp(d,m,id){const pre=m+"|"+id+"|";let best=null,bc=0;Object.keys(d.asp).forEach(k=>{if(k.startsWith(pre)&&d.asp[k]>bc){bc=d.asp[k];best=k.slice(pre.length)}});return best?{x:best,c:bc}:null}
+function changes(d,prev){
+  if(!prev||!prev.n||!d.n)return[];
+  const out=[];
+  rRows(d).forEach(r=>{const pv=(prev.t||{})[r.id]||[0,0];
+    [["m",1,"besser machen"],["p",0,"lief gut"]].forEach(([f,i,lab])=>{const now=r[f],bef=pv[i];if(Math.max(now,bef)<3)return;
+      const a=pct(bef,prev.n),b=pct(now,d.n);if(Math.abs(b-a)<10)return;
+      out.push({n:r.n,f,lab,a,b,good:f==="m"?b<a:b>a,d:Math.abs(b-a)})})});
+  return out.sort((x,y)=>y.d-x.d).slice(0,6);
+}
+function periodText(d){return d.from?dLong(d.from)+" – "+dLong(d.to):"bis "+dLong(d.to)}
+function rpPage(no,total,meta,title,body){
+  return `<section class="rp-page"><header class="rp-head"><span class="rp-brand"><span class="rp-key">1</span>Status 1<small>DEBRIEF</small></span><span class="rp-meta">${meta}</span></header>
+  ${title?`<div class="rp-title"><span class="rp-eyebrow">${title[0]}</span><h2>${title[1]}</h2></div>`:""}${body}
+  <footer class="rp-foot"><span>Anonym erhoben: keine Namen, keine Patientendaten, keine Uhrzeiten. Einrichtungen bei „besser machen“ erst ab ${MIN_NEG} Nennungen.</span><span>Seite ${no} von ${total}</span></footer></section>`;
+}
+function reportHtml(d,prev){
+  const st=(db.settings.station||"").trim()||"Rettungswache";
+  const meta=esc(st)+"<br>"+periodText(d);
+  const rows=rRows(d);
+  const tp=rows.reduce((a,r)=>a+r.p,0),tn=rows.reduce((a,r)=>a+r.m,0);
+  const topP=rows.filter(r=>r.p>0).sort((a,b)=>b.p-a.p).slice(0,3);
+  const topN=rows.filter(r=>r.m>0).sort((a,b)=>b.m-a.m).slice(0,3);
+  const li=(r,m,i)=>{const a=topAsp(d,m==="p"?"pos":"neg",r.id);const c=m==="p"?r.p:r.m;
+    return `<li><span class="no">${i+1}</span><span class="nm">${esc(r.n)}<small>${a?"vor allem: "+esc(a.x):"in "+pct(c,d.n)+" % der Debriefs"}</small></span><span class="ct">${c}×</span></li>`};
+  const chg=changes(d,prev);
+  const basis=`${d.n} Debriefs${d.veh>1?" · "+d.veh+" Fahrzeuge zusammengeführt":""}`;
+  const p1=`<div class="rp-cover"><span class="rp-eyebrow">Debrief-Bericht</span><h1>${esc(st)}</h1><div class="rp-sub">${periodText(d)}</div><div class="rp-basis">${basis}</div></div>
+   <div class="rp-kpis"><div class="rp-kpi"><b>${d.n}</b><span>Debriefs</span></div><div class="rp-kpi"><b style="color:var(--po)">${tp}</b><span>× lief gut</span></div><div class="rp-kpi"><b style="color:var(--ne)">${tn}</b><span>× besser machen</span></div><div class="rp-kpi"><b>${d.lessons.length}</b><span>Lehren notiert</span></div></div>
+   <div class="rp-two"><div class="rp-top p"><h3>Die größten Stärken</h3>${topP.length?`<ol>${topP.map((r,i)=>li(r,"p",i)).join("")}</ol>`:`<p class="none">Noch keine Nennungen.</p>`}</div>
+   <div class="rp-top n"><h3>Die wichtigsten Verbesserungsthemen</h3>${topN.length?`<ol>${topN.map((r,i)=>li(r,"n",i)).join("")}</ol>`:`<p class="none">Noch keine Nennungen.</p>`}</div></div>
+   <div class="rp-box"><h3>Veränderung zum letzten Zeitraum</h3>${prev?(()=>{
+     const say=c=>c.f==="m"?(c.b<c.a?"wird seltener als Problem genannt":"wird häufiger als Problem genannt"):(c.b>c.a?"wird häufiger als Stärke genannt":"wird seltener als Stärke genannt");
+     const row=c=>`<div class="rp-ch"><div class="t"><b>${esc(c.n)}</b> ${say(c)}</div><div class="cmp"><span class="k">vorher</span><span class="rbar"><i class="was" style="width:${Math.min(100,c.a)}%"></i></span><span class="v">${c.a} %</span><span class="k">jetzt</span><span class="rbar"><i class="${c.good?"ps":"ng"}" style="width:${Math.min(100,c.b)}%"></i></span><span class="v">${c.b} %</span></div></div>`;
+     const G=chg.filter(c=>c.good).slice(0,3),B=chg.filter(c=>!c.good).slice(0,3);
+     return `<div class="rp-chg2"><div class="col g"><h4>Positiv entwickelt</h4>${G.length?G.map(row).join(""):`<p class="rp-note">Keine deutliche Verbesserung.</p>`}</div><div class="col b"><h4>Im Blick behalten</h4>${B.length?B.map(row).join(""):`<p class="rp-note">Keine deutliche Verschlechterung.</p>`}</div></div>
+      <p class="rp-note">Vergleich mit ${periodText({from:prev.from,to:prev.to})} (${prev.n} Debriefs). Prozent = Anteil der Debriefs, in denen das Thema genannt wurde. So sind unterschiedlich lange Zeiträume vergleichbar. Gezeigt werden Veränderungen ab 10 Prozentpunkten.</p>`})():`<p class="rp-note">Der Vergleich erscheint ab dem nächsten Bericht.</p>`}</div>
+   <div class="rp-box"><h3>Nach Bereichen</h3><div class="rp-areas">${(()=>{const A=TAGS.map(g=>{let p=0,m=0;g.items.forEach(([id])=>{const r=rows.find(x=>x.id===id);p+=r.p;m+=r.m});return{g:g.g,p,m}});const mx=Math.max(1,...A.map(a=>a.p+a.m));
+     return A.map(a=>`<div class="rp-area"><span class="nm">${a.g}</span><span class="tr"><i class="p" style="width:${(a.p/mx*100).toFixed(1)}%"></i><i class="n" style="width:${(a.m/mx*100).toFixed(1)}%"></i></span><span class="v"><b style="color:var(--po)">${a.p}</b> · <b style="color:var(--ne)">${a.m}</b></span></div>`).join("")})()}</div></div>
+   ${d.n<10?`<p class="rp-note">Hinweis: Bei weniger als 10 Debriefs zeigen die Zahlen nur eine Tendenz.</p>`:""}`;
+  const max=Math.max(1,...rows.map(r=>Math.max(r.p,r.m)));
+  const bw=v=>`width:calc((100% - 8mm) * ${(v/max).toFixed(3)})`;
+  let ch=`<div class="rp-chart"><div class="rp-ch-head"><span></span><span class="l">lief gut</span><span class="r">besser machen</span></div>`;
+  TAGS.forEach(g=>{ch+=`<div class="rp-grp">${g.g}</div>`;g.items.forEach(([id])=>{const r=rows.find(x=>x.id===id);
+    ch+=`<div class="rp-row ${r.p+r.m?"":"zero"}"><span class="lab">${esc(r.n)}</span><span class="lft"><em>${r.p||""}</em>${r.p?`<i style="${bw(r.p)}"></i>`:""}</span><span class="rgt">${r.m?`<i style="${bw(r.m)}"></i>`:""}<em>${r.m||""}</em></span></div>`})});
+  ch+=`</div><p class="rp-note">Je Schlagwort: wie oft es in den Debriefs als „lief gut“ (links) und als „besser machen“ (rechts) angetippt wurde.</p>`;
+  let dets="",mini="";
+  Object.keys(DET).forEach(id=>{
+    const pl={},as={};
+    ["pos","neg"].forEach(m=>{const pre=m+"|"+id+"|";
+      Object.keys(d.place).filter(k=>k.startsWith(pre)).forEach(k=>{const x=k.slice(pre.length);(pl[x]=pl[x]||{pos:0,neg:0})[m]+=d.place[k]});
+      Object.keys(d.asp).filter(k=>k.startsWith(pre)).forEach(k=>{const x=k.slice(pre.length);(as[x]=as[x]||{pos:0,neg:0})[m]+=d.asp[k]})});
+    const pk=Object.keys(pl),ak=Object.keys(as);if(!pk.length&&!ak.length)return;
+    let under=0;const prow=[];
+    pk.forEach(x=>{const c=pl[x];const nshow=c.neg>=MIN_NEG?c.neg:0;if(c.neg&&c.neg<MIN_NEG)under+=c.neg;if(c.pos||nshow)prow.push({x,p:c.pos,n:nshow})});
+    prow.sort((a,b)=>(b.p+b.n)-(a.p+a.n));
+    const arow=ak.map(x=>({x,p:as[x].pos,n:as[x].neg})).sort((a,b)=>(b.p+b.n)-(a.p+a.n));
+    const tbl=(rs,extra)=>`<table><tr><th></th><th>gut</th><th>besser</th></tr>${rs.map(r=>`<tr><td>${esc(r.x)}</td><td class="c p">${r.p||"–"}</td><td class="c n">${r.n||"–"}</td></tr>`).join("")}${extra||""}</table>`;
+    const extra=under?`<tr><td class="muted">Weitere Einrichtungen (je unter ${MIN_NEG})</td><td class="c">–</td><td class="c n">${under}</td></tr>`:"";
+    if(DET[id].places)dets+=`<div class="rp-det"><h3>${esc(TAGNAME[id])}</h3><div class="rp-det-grid"><div><h4>Wo?</h4>${prow.length||under?tbl(prow.slice(0,6),extra):`<p class="rp-note">Keine Angaben.</p>`}</div><div><h4>Was genau?</h4>${arow.length?tbl(arow.slice(0,6)):`<p class="rp-note">Keine Angaben.</p>`}</div></div></div>`;
+    else mini+=`<div class="rp-det"><h3>${esc(TAGNAME[id])}</h3>${arow.length?tbl(arow.slice(0,5)):`<p class="rp-note">Keine Angaben.</p>`}</div>`;
+  });
+  const cats=Object.keys(d.cats||{});
+  const p3=(dets||mini?`<div class="rp-dets">${dets}${mini?`<div class="rp-minis">${mini}</div>`:""}</div>`:`<p class="rp-note">In diesem Zeitraum wurden keine Details zu Einrichtungen oder Unterpunkten angegeben.</p>`)+
+    (cats.length?`<div class="rp-box"><h3>Einsatzart (freiwillig erfasst)</h3><p style="margin:0">${cats.map(c=>esc(c)+": "+d.cats[c]).join(" · ")}</p></div>`:"");
+  const L=d.lessons.slice(0,16);
+  const p4=`<div class="rp-box" style="border:0;padding:0"><h3>Lehren aus den Einsätzen</h3>${L.length?`<div class="rp-lessons">${L.map(t=>`<p>${esc(t)}</p>`).join("")}</div>${d.lessons.length>16?`<p class="rp-note">und ${d.lessons.length-16} weitere in der App</p>`:""}`:`<p class="rp-note">Keine Lehren notiert.</p>`}</div>
+   <div class="rp-meet"><h3>Für die Wachenbesprechung</h3>
+    <div class="rp-q"><b>1</b><div><b style="font-family:var(--body);font-size:10pt;color:inherit">Unsere Stärken: Was läuft gut, und wie erhalten wir es?</b><div class="lines"></div></div></div>
+    <div class="rp-q"><b>2</b><div><b style="font-family:var(--body);font-size:10pt;color:inherit">Unsere Verbesserungsthemen: Was steckt dahinter?</b><div class="lines"></div></div></div>
+    <div class="rp-q"><b>3</b><div><b style="font-family:var(--body);font-size:10pt;color:inherit">Maßnahmen</b>
+     <table><tr><th style="width:55%">Maßnahme</th><th>Zuständig</th><th>Bis wann</th></tr><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr></table></div></div>
+   </div>`;
+  return rpPage(1,4,meta,null,p1)+rpPage(2,4,meta,["Übersicht","Alle Schlagworte"],ch)+rpPage(3,4,meta,["Genauer hingeschaut","Schnittstellen und Details"],p3)+rpPage(4,4,meta,["Aus der Praxis","Lehren und nächste Schritte"],p4);
+}
+function fitReport(){const w=document.getElementById("rpwrap"),d=document.getElementById("rpdoc");if(!w||!d)return;
+  d.style.transform="none";const k=Math.min(1,w.clientWidth/d.offsetWidth);d.style.transform=`scale(${k})`;w.style.height=(d.offsetHeight*k)+"px"}
+window.addEventListener("resize",()=>{if(view==="report")fitReport()});
+let reportDone=null;
+function vReport(){
+  if(!unlocked)return vPin();
+  const merged=!!ui.merged,d=dataset(merged);
+  return `<div class="stack"><div class="rp-tools stack" style="gap:10px">
+   <div class="eyebrow">Bericht${merged?" · "+d.veh+" Fahrzeuge":" · dieses Gerät"}</div><h2>Bericht als PDF</h2>
+   <p class="small" style="margin:0">„Als PDF sichern“ öffnet das Druckmenü. Dort „Als PDF sichern“ bzw. „Speichern als PDF“ wählen oder direkt drucken.</p>
+   <div class="two"><button class="btn primary" data-a="print" data-m="${merged?1:0}">Als PDF sichern</button><button class="btn ghost" data-a="go" data-v="stats">Zurück</button></div></div>
+   <div class="rp-wrap" id="rpwrap"><div class="rp-doc" id="rpdoc">${reportHtml(d,prevFor(merged))}</div></div></div>`;
+}
+function closeCard(){
+  const c=db.collected||[],merged=c.length>0,rd=reportDone;
+  return `<div class="card stack" style="gap:10px"><h3>Bericht und Abschluss</h3>
+   <p class="small" style="margin:0">Zeitraum ${db.since?"seit "+dLong(db.since):"bis heute"} · ${db.debriefs} Debriefs auf diesem Gerät${merged?` · dazu ${c.length} ${c.length===1?"Fahrzeug":"Fahrzeuge"} eingesammelt`:""}.</p>
+   <button class="btn primary" data-a="report" data-m="${merged?1:0}">${merged?"Gemeinsamen Bericht erstellen":"Bericht erstellen"}</button>
+   ${rd?`<div class="closebox stack" style="gap:8px">
+     <label class="check"><input type="checkbox" data-a="savedok" ${ui.savedOk?"checked":""}> Der Bericht ist als PDF gespeichert oder ausgedruckt.</label>
+     <button class="btn warn" data-a="close" data-m="${rd.merged?1:0}" ${ui.savedOk?"":"disabled"}>Zeitraum abschließen und Zähler zurücksetzen</button>
+     <p class="small" style="margin:0">Gelöscht werden die Zählerstände${rd.merged?" dieses Geräts und die eingesammelten Stände":""} und die Lehren. Für den Vergleich im nächsten Bericht bleiben nur die Summen. Hinweise unter „Dringender Sprechwunsch“ bleiben erhalten.</p></div>`
+   :`<p class="small" style="margin:0">Zurücksetzen ist erst möglich, nachdem ein Bericht erstellt wurde.</p>`}
+   ${db.undo?`<div class="hint" style="font-size:15px">Letzter Abschluss am ${dLong(db.undo.day)}. Falls der Bericht doch nicht gespeichert wurde: <button class="linkbtn" data-a="undo">Abschluss rückgängig machen</button></div>`:""}
+   <details><summary class="small">Als Tabelle exportieren (Text)</summary>
+    <textarea id="csv" readonly rows="6" style="font-size:13px;font-family:ui-monospace,Menlo,monospace;margin-top:8px">${esc(csv())}</textarea>
+    <button class="btn" data-a="copy" style="margin-top:8px">${ui.copied?"Kopiert":"Kopieren"}</button></details>
+   ${db.demo?(ui.confirmReset?`<button class="btn warn" data-a="reset">Wirklich alle Daten löschen</button>`:`<button class="btn ghost" data-a="askreset">Beispieldaten entfernen</button>`):""}
+  </div>`;
+}
+function mergeCard(){const c=db.collected||[];
+  return `<div class="card stack" style="gap:10px"><h3>Fahrzeuge zusammenführen</h3>
+   <p class="small" style="margin:0">Für einen gemeinsamen Bericht der Wache sammelt ein Gerät die Stände der anderen Fahrzeuge ein, per QR-Code oder Datei. Im Bericht stehen nur Summen, nicht welches Fahrzeug was gemeldet hat.</p>
+   <div class="two"><button class="btn" data-a="go" data-v="share">Stand weitergeben</button><button class="btn" data-a="go" data-v="collect">Stände einsammeln</button></div>
+   ${c.length?`<p class="small" style="margin:0">Eingesammelt: ${c.length} ${c.length===1?"Fahrzeug":"Fahrzeuge"} mit zusammen ${c.reduce((a,x)=>a+(+x.n||0),0)} Debriefs.</p>`:""}
+  </div>`}
+function closePeriod(merged){
+  const d=dataset(merged);
+  db.history=(db.history||[]).concat([{from:d.from,to:TODAY(),n:d.n,merged:!!merged,t:totalsOf(d)}]).slice(-12);
+  db.undo={day:TODAY(),since:db.since,debriefs:db.debriefs,counts:db.counts,place:db.place||{},asp:db.asp||{},cats:db.cats||{},lessons:db.lessons||[],collected:merged?(db.collected||[]):[]};
+  Object.assign(db,{debriefs:0,counts:{},place:{},asp:{},cats:{},lessons:[],since:TODAY(),demo:false,snapId:null});
+  if(merged)db.collected=[];
+  reportDone=null;save();
+}
+function undoClose(){
+  const u=db.undo;if(!u)return;
+  const cur=addInto(emptyData(),{n:db.debriefs,counts:db.counts,place:db.place,asp:db.asp,cats:db.cats,lessons:db.lessons});
+  const back=addInto(emptyData(),{n:u.debriefs,counts:u.counts,place:u.place,asp:u.asp,cats:u.cats,lessons:u.lessons});
+  addInto(back,cur);
+  Object.assign(db,{debriefs:back.n,counts:back.counts,place:back.place,asp:back.asp,cats:back.cats,lessons:back.lessons,since:u.since,snapId:null});
+  db.collected=(u.collected||[]).concat(db.collected||[]);
+  (db.history||[]).pop();db.undo=null;save();
+}
+// QR und Datei
+function loadLib(src,name){return new Promise((ok,no)=>{if(window[name])return ok();const s=document.createElement("script");s.src=src;s.onload=()=>ok();s.onerror=()=>no(new Error("lib"));document.head.appendChild(s)})}
+function b64(u8){let s="";for(let i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return btoa(s)}
+function unb64(t){const b=atob(t),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+async function packSnap(){const json=JSON.stringify(ownSnap());let enc="j",body=null;
+  try{if(window.CompressionStream){const buf=await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer();body=b64(new Uint8Array(buf));enc="z"}}catch(e){body=null}
+  if(!body){body=b64(new TextEncoder().encode(json));enc="j"}
+  const id=ownSnap().id,size=650,parts=[];for(let i=0;i<body.length;i+=size)parts.push(body.slice(i,i+size));
+  return parts.map((p,i)=>`S1|${id}|${enc}|${i+1}|${parts.length}|${p}`);
+}
+async function unpack(enc,body){const u=unb64(body);
+  if(enc==="z"){const buf=await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer();return JSON.parse(new TextDecoder().decode(buf))}
+  return JSON.parse(new TextDecoder().decode(u))}
+function cleanSnap(x){
+  if(!x||x.v!==1||typeof x.counts!=="object")throw new Error("format");
+  const num=v=>Math.max(0,Math.min(100000,Math.floor(+v||0))),obj=o=>{const r={};Object.keys(o||{}).slice(0,2000).forEach(k=>{r[String(k).slice(0,200)]=num(o[k])});return r};
+  const counts={};Object.keys(x.counts).forEach(k=>{if(TAGNAME[k])counts[k]={pos:num(x.counts[k].pos),neg:num(x.counts[k].neg)}});
+  return{v:1,id:String(x.id||rid()).slice(0,20),from:typeof x.from==="string"?x.from.slice(0,10):null,to:typeof x.to==="string"?x.to.slice(0,10):null,n:num(x.n),counts,place:obj(x.place),asp:obj(x.asp),cats:obj(x.cats),lessons:(Array.isArray(x.lessons)?x.lessons:[]).slice(0,500).map(t=>String(t).slice(0,140)),veh:1};
+}
+function addCollected(raw){
+  let x;try{x=cleanSnap(raw)}catch(e){ui.err="Das ist kein Stand aus Status 1.";ui.ok=null;return false}
+  if(x.id===ownSnap().id){ui.err="Das ist der Stand dieses Geräts. Bitte auf einem anderen Fahrzeug weitergeben.";ui.ok=null;return false}
+  db.collected=(db.collected||[]).filter(c=>c.id!==x.id).concat([x]);save();
+  ui.ok=`Stand übernommen: ${x.n} Debriefs.`;ui.err=null;return true;
+}
+function vShare(){
+  if(!unlocked)return vPin();
+  return `<div class="stack"><div class="eyebrow">Fahrzeuge zusammenführen</div><h2>Stand weitergeben</h2>
+   <p class="small" style="margin:0">Auf dem sammelnden Gerät „Stände einsammeln“ öffnen und diesen Code scannen. Übertragen werden nur Zählerstände und Lehren dieses Geräts.</p>
+   <div class="qrbox" id="qrbox"><span class="small">Code wird erstellt …</span></div>
+   <button class="btn" data-a="sharefile">Als Datei teilen</button>
+   <div class="card stack closebox" style="gap:8px;border-top:1px solid var(--line)">
+    <label class="check"><input type="checkbox" data-a="savedok" ${ui.savedOk?"checked":""}> Der Stand wurde auf dem sammelnden Gerät übernommen.</label>
+    <button class="btn warn" data-a="close" data-m="0" ${ui.savedOk?"":"disabled"}>Zeitraum auf diesem Gerät abschließen</button>
+    <p class="small" style="margin:0">Setzt die Zähler dieses Geräts zurück. Rückgängig machen ist bis zum nächsten Abschluss möglich.</p>
+   </div>
+   <button class="btn ghost" data-a="go" data-v="stats">Zurück</button></div>`;
+}
+async function fillShare(){const box=document.getElementById("qrbox");if(!box)return;
+  try{if(!ui.codes)ui.codes=await packSnap();await loadLib("lib/qrcode.js","qrcode");
+    const i=Math.min(ui.part||0,ui.codes.length-1),qr=qrcode(0,"M");qr.addData(ui.codes[i],"Byte");qr.make();
+    if(view!=="share")return;
+    box.innerHTML=qr.createSvgTag({cellSize:4,margin:4,scalable:true})+
+     (ui.codes.length>1?`<b>Teil ${i+1} von ${ui.codes.length}</b><div class="two" style="width:100%"><button class="btn" data-a="qrprev" ${i===0?"disabled":""}>Zurück</button><button class="btn" data-a="qrnext" ${i===ui.codes.length-1?"disabled":""}>Nächster Teil</button></div>`:`<span class="small">${db.debriefs} Debriefs · ${(db.lessons||[]).length} Lehren</span>`);
+  }catch(e){box.innerHTML=`<span class="small">Der Code konnte nicht erstellt werden. Bitte „Als Datei teilen“ verwenden.</span>`}
+}
+async function shareFile(){
+  const txt=JSON.stringify(ownSnap()),name=`status1-stand-${TODAY()}.json`;
+  try{const f=new File([txt],name,{type:"application/json"});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"Status 1 Stand"});return}}catch(e){if(e&&e.name==="AbortError")return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+let cam=null,scanParts={};
+function stopCam(){if(cam){try{cam.stream.getTracks().forEach(t=>t.stop())}catch(e){}cancelAnimationFrame(cam.raf);cam=null}}
+async function startCam(){
+  try{await loadLib("lib/jsQR.js","jsQR");
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+    const v=document.getElementById("camv");if(!v){stream.getTracks().forEach(t=>t.stop());return}
+    v.srcObject=stream;v.setAttribute("playsinline","");await v.play();
+    const c=document.createElement("canvas"),x=c.getContext("2d",{willReadFrequently:true});
+    cam={stream,raf:0,last:0};
+    const loop=async ts=>{if(!cam)return;cam.raf=requestAnimationFrame(loop);if(ts-cam.last<250||!v.videoWidth)return;cam.last=ts;
+      const w=Math.min(720,v.videoWidth),h=Math.round(v.videoHeight*w/v.videoWidth);c.width=w;c.height=h;x.drawImage(v,0,0,w,h);
+      const r=window.jsQR(x.getImageData(0,0,w,h).data,w,h,{inversionAttempts:"dontInvert"});if(r&&r.data)await onCode(r.data)};
+    cam.raf=requestAnimationFrame(loop);ui.camOn=true;ui.err=null;
+    const st=document.getElementById("scanstate");if(st)st.textContent="Kamera auf den Code richten.";
+  }catch(e){stopCam();ui.camOn=false;ui.err="Die Kamera ist nicht verfügbar. Bitte den Stand als Datei übertragen.";render()}
+}
+async function onCode(t){
+  const m=/^S1\|([^|]+)\|([jz])\|(\d+)\|(\d+)\|(.+)$/.exec(t);if(!m)return;
+  const [,id,enc,i,n,body]=m;const P=scanParts[id]=scanParts[id]||{enc,n:+n,got:{}};P.got[i]=body;
+  const have=Object.keys(P.got).length,st=document.getElementById("scanstate");
+  if(have<P.n){if(st)st.textContent=`Teil ${have} von ${P.n} erkannt. Auf dem anderen Gerät „Nächster Teil“ tippen.`;return}
+  let body2="";for(let k=1;k<=P.n;k++)body2+=P.got[k];delete scanParts[id];
+  try{const x=await unpack(P.enc,body2);addCollected(x)}catch(e){ui.err="Der Code konnte nicht gelesen werden. Bitte erneut scannen.";ui.ok=null}
+  stopCam();ui.camOn=false;render();
+}
+function vCollect(){
+  if(!unlocked)return vPin();
+  const c=db.collected||[];
+  return `<div class="stack"><div class="eyebrow">Fahrzeuge zusammenführen</div><h2>Stände einsammeln</h2>
+   <p class="small" style="margin:0">Auf jedem anderen Fahrzeug: Auswertung → „Stand weitergeben“. Dann hier den Code scannen oder die Datei laden. Dieses Gerät zählt automatisch mit.</p>
+   ${ui.ok?`<div class="okmsg">${esc(ui.ok)}</div>`:""}${ui.err?`<div class="errmsg">${esc(ui.err)}</div>`:""}
+   ${ui.camOn?`<div class="scanbox"><video id="camv" muted playsinline></video><i></i></div><p class="small" id="scanstate" style="margin:0;text-align:center">Kamera wird gestartet …</p><button class="btn ghost" data-a="camoff">Kamera ausschalten</button>`
+     :`<button class="btn" data-a="camon">Code scannen</button>`}
+   <label class="btn" for="s1file" style="cursor:pointer">Datei laden<input type="file" id="s1file" accept=".json,application/json" hidden></label>
+   <div class="card"><h3 style="margin-top:0">Eingesammelt</h3>${c.length?`<ul class="collected">${c.map((x,i)=>`<li><span>Fahrzeug ${i+1}: ${x.n} Debriefs${x.from?" seit "+dLong(x.from):""}</span><button class="x" data-a="uncollect" data-i="${i}">Entfernen</button></li>`).join("")}</ul>`:`<p class="small" style="margin:0">Noch keine Stände.</p>`}</div>
+   <button class="btn primary" data-a="report" data-m="1" ${c.length?"":"disabled"}>Gemeinsamen Bericht erstellen</button>
+   <button class="btn ghost" data-a="go" data-v="stats">Zurück</button></div>`;
+}
+app.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+  if(a==="report"){if(b.disabled)return;view="report";ui={merged:b.dataset.m==="1"};render();window.scrollTo(0,0)}
+  else if(a==="print"){reportDone={merged:b.dataset.m==="1"};try{window.print()}catch(err){}}
+  else if(a==="savedok"){ui.savedOk=b.checked;render()}
+  else if(a==="close"){if(b.disabled)return;closePeriod(b.dataset.m==="1");view="stats";ui={closed:true};render();window.scrollTo(0,0)}
+  else if(a==="undo"){undoClose();render()}
+  else if(a==="sharefile"){shareFile()}
+  else if(a==="qrprev"){ui.part=Math.max(0,(ui.part||0)-1);render()}
+  else if(a==="qrnext"){ui.part=(ui.part||0)+1;render()}
+  else if(a==="camon"){ui.camOn=true;ui.ok=null;ui.err=null;render();startCam()}
+  else if(a==="camoff"){stopCam();ui.camOn=false;render()}
+  else if(a==="uncollect"){(db.collected||[]).splice(+b.dataset.i,1);save();render()}
+  else if(a==="savestation"){db.settings.station=((document.getElementById("station")||{}).value||"").trim().slice(0,60);save();ui={stMsg:"Gespeichert."};render()}
+});
+app.addEventListener("change",e=>{const t=e.target;if(!t||!t.classList||!t.classList.contains("shiftsel"))return;
+  const inp=document.getElementById(t.dataset.px+"shifts");if(inp){inp.hidden=t.value!=="custom";if(t.value==="custom")inp.focus()}});
+app.addEventListener("change",e=>{const t=e.target;if(!t||t.id!=="s1file"||!t.files||!t.files[0])return;
+  const r=new FileReader();r.onload=()=>{try{addCollected(JSON.parse(r.result))}catch(err){ui.err="Die Datei konnte nicht gelesen werden.";ui.ok=null}render()};r.readAsText(t.files[0])});
+
+app.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;
+  const a=b.dataset.a;
+  if(a==="home"){run=null;unlockScreen();go("home")}
+  else if(a==="go"){go(b.dataset.v)}
+  else if(a==="start"){run={mode:b.dataset.mode,step:0,pos:new Set(),neg:new Set(),lesson:"",noteType:"lehre",notes:[],det:{pos:{},neg:{}},cat:null,help:false,showRules:false,t0:Date.now(),dur:b.dataset.mode==="lang"?300:120};lockScreen();go("flow")}
+  else if(a==="help"){run.help=true;render()}
+  else if(a==="next"){if(steps()[run.step]==="take")flushNote();run.step++;if(run.step>=steps().length)finish();else{render();window.scrollTo(0,0)}}
+  else if(a==="back"){run.step=Math.max(0,run.step-1);render();window.scrollTo(0,0)}
+  else if(a==="abort"){run=null;unlockScreen();go("home")}
+  else if(a==="tag"){const m=b.dataset.mode,s=m==="pos"?run.pos:run.neg,id=b.dataset.id;if(s.has(id)){s.delete(id);delete run.det[m][id]}else s.add(id);if(DET[id])render();else b.setAttribute("aria-pressed",s.has(id))}
+  else if(a==="dplace"||a==="dasp"){const m=b.dataset.mode,id=b.dataset.id,v=b.dataset.v;const d=run.det[m][id]=run.det[m][id]||{place:null,asp:[]};
+    if(a==="dplace")d.place=d.place===v?null:v;else{const i=d.asp.indexOf(v);i<0?d.asp.push(v):d.asp.splice(i,1)}render()}
+  else if(a==="savelists"){const rd=x=>((document.getElementById(x)||{}).value||"").split("\n").map(s=>s.replace(/\|/g,"/").trim()).filter(Boolean).slice(0,120);
+    db.settings.kliniken=rd("kliniken");db.settings.klinikenMore=rd("klinikenMore");db.settings.leitstellen=rd("leitstellen");db.settings.leitstellenMore=rd("leitstellenMore");save();ui={listMsg:"Gespeichert."};render()}
+  else if(a==="cat"){run.cat=run.cat===b.dataset.c?null:b.dataset.c;render()}
+  else if(a==="savel"){run.saveLesson=b.checked;const box=document.getElementById("lessonBox");if(box)box.hidden=!b.checked}
+  else if(a==="rulesShow"){run.showRules=true;render()}
+  else if(a==="finish"){finish()}
+  else if(a==="pinok"){const v=(document.getElementById("pin")||{}).value||"";if(v===db.settings.pin){unlocked=true;ui={}}else{ui={pinErr:true}}render()}
+  else if(a==="lock"){unlocked=false;go("home")}
+  else if(a==="sort"){sortMode=b.dataset.s;render()}
+  else if(a==="demo"){loadDemo()}
+  else if(a==="dell"){db.lessons.splice(+b.dataset.i,1);save();render()}
+  else if(a==="copy"){const t=document.getElementById("csv");const done=()=>{ui.copied=true;render()};
+    try{navigator.clipboard.writeText(t.value).then(done).catch(()=>{t.focus();t.select()})}catch(err){t.focus();t.select()}}
+  else if(a==="askreset"){ui.confirmReset=true;render()}
+  else if(a==="reset"){const s=db.settings,bd=db.board||[];db=blank();db.settings=s;db.board=bd;save();ui={};render()}
+  else if(a==="askcat"){db.settings.askCat=b.checked;save()}
+  else if(a==="ntype"){run.noteType=b.dataset.t;render()}
+  else if(a==="addn"){flushNote();render()}
+  else if(a==="deln"){run.notes.splice(+b.dataset.i,1);render()}
+  else if(a==="wtype"){ui.wtype=b.dataset.t;b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b))}
+  else if(a==="addw"){const v=((document.getElementById("wnote")||{}).value||"").trim().slice(0,140);if(v){addNote(v,ui.wtype==="lehre"?"lehre":"fzg");markSeen();save();render()}}
+  else if(a==="delb"){db.board.splice(+b.dataset.i,1);save();render()}
+  else if(a==="setpin"){const g=x=>((document.getElementById(x)||{}).value||"").trim(),o=g("oldpin"),v=g("newpin"),v2=g("newpin2");
+    if(o!==db.settings.pin){ui={pinMsg:"Die bisherige PIN stimmt nicht."}}
+    else if(!/^\d{4,8}$/.test(v)){ui={pinMsg:"Die neue PIN muss aus 4 bis 8 Ziffern bestehen."}}
+    else if(v!==v2){ui={pinMsg:"Die beiden neuen PINs stimmen nicht überein."}}
+    else{db.settings.pin=v;save();ui={pinMsg:"PIN geändert.",pinOk:true}}render()}
+});
+app.addEventListener("change",e=>{const t=e.target;if(!t.classList||!t.classList.contains("msel")||!run)return;
+  const m=t.dataset.mode,id=t.dataset.id;const d=run.det[m][id]=run.det[m][id]||{place:null,asp:[]};d.place=t.value||null;render()});
+app.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="pin"){e.preventDefault();app.querySelector('[data-a="pinok"]').click()}});
+
+render();
+})();
+</script>
+
+<script>
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
+</script>
+</body>
+</html>

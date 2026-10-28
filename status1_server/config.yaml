@@ -1,0 +1,23 @@
+name: Status 1 Debrief Server
+version: "0.1.0"
+slug: status1_server
+description: Zentrale Auswertung für Status 1 Debrief – Testbetrieb im Heimnetz
+url: https://github.com/joevent/status1-server
+arch:
+  - aarch64
+  - amd64
+  - armv7
+init: false
+startup: application
+boot: auto
+webui: "http://[HOST]:[PORT:8099]/portal/"
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: Wachenportal und App
+options:
+  min_debriefs: 10
+  keep_months: 24
+schema:
+  min_debriefs: int(1,100)
+  keep_months: int(3,120)
